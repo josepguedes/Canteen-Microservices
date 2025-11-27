@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import AppError from "../utils/AppError";
 import * as HttpStatusCode from "../constants/httpStatusCode";
+import logger from "../utils/logger";
 
 interface PostgresError {
   code?: string;
@@ -21,6 +22,14 @@ const errorHandler = (
   next: NextFunction
 ) => {
   if (error instanceof AppError) {
+    logger.warn(
+      {
+        statusCode: error.statusCode,
+        errorCode: error.errorCode,
+        message: error.message,
+      },
+      "Application error"
+    );
     return res.status(error.statusCode).json({
       errorCode: error.errorCode,
       message: error.message,
@@ -28,16 +37,19 @@ const errorHandler = (
   }
 
   if (isPostgresError(error)) {
-    console.error("Postgres error:", {
-      code: error.code,
-      message: error.message,
-      detail: error.detail,
-      hint: error.hint,
-      stack: error.stack,
-    });
+    logger.error(
+      {
+        code: error.code,
+        message: error.message,
+        detail: error.detail,
+        hint: error.hint,
+        stack: error.stack,
+      },
+      "Postgres error"
+    );
   }
 
-  console.error("Unexpected error:", error);
+  logger.error(error, "Unexpected error");
 
   return res.status(HttpStatusCode.INTERNAL_SERVER_ERROR).json({
     message: "Something went wrong",
