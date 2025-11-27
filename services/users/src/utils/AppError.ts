@@ -3,8 +3,8 @@ import { HttpStatusCode } from "../constants/httpStatusCode";
 
 class AppError extends Error {
   constructor(
-    public statusCode: HttpStatusCode,
     public message: string,
+    public statusCode: HttpStatusCode,
     public errorCode?: AppErrorCode
   ) {
     super(message);
