@@ -1,16 +1,26 @@
-import express from "express";
-import dotenv from "dotenv";
-import errorHandler from "./middleware/errorHandler";
-import logger from "./utils/logger";
+import { ApolloServer } from "@apollo/server";
+import { startStandaloneServer } from "@apollo/server/standalone";
 
+import dotenv from "dotenv";
 dotenv.config();
 
-const app = express();
-app.use(express.json());
+const typeDefs = `#graphql
+  type Query {
+    hello: String
+  }
+`;
 
-//error handler
-app.use(errorHandler);
+const resolvers = {
+  Query: {
+    hello: () => "Hello world!",
+  },
+};
 
-app.listen(process.env.PORT, () => {
-  logger.info(`Users service running on port ${process.env.PORT}`);
+const port = Number(process.env.PORT) || 4000;
+
+const server = new ApolloServer({ typeDefs, resolvers });
+
+const { url } = await startStandaloneServer(server, {
+  listen: { port: port },
 });
+console.log(`🚀 Server ready at ${url}`);
