@@ -21,9 +21,6 @@ app.get("/health", (req, res) => {
 // Routes
 app.use("/orders", orderRoutes);
 
-// Error handler (must be last)
-app.use(errorHandler);
-
 const PORT = process.env.PORT || 3002;
 
 app.listen(PORT, () => {
@@ -31,3 +28,5 @@ app.listen(PORT, () => {
   console.log(`\n🚀 Orders service running at: ${url}`);
   logger.info(`Orders service running on port ${PORT}`);
 });
+
+app.use(errorHandler);
