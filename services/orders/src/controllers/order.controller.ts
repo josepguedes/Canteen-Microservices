@@ -53,21 +53,16 @@ import logger from "../utils/logger";
 export const getOrder = catchAsync(async (req: Request, res: Response) => {
   logger.info('Fetching order by ID');
 
-  try {
-    const { id } = req.params;
-    logger.info(`Fetching order with ID: ${id}`);
+  const { id } = req.params;
+  logger.info(`Fetching order with ID: ${id}`);
 
-    const order = await orderService.getOrderById(Number(id));
-    logger.info(`Order ${id} retrieved successfully`);
+  const order = await orderService.getOrderById(Number(id));
+  logger.info(`Order ${id} retrieved successfully`);
 
-    res.status(HttpStatusCode.OK).json({
-      status: "success",
-      data: order,
-    });
-  } catch (error) {
-    logger.error(`Error retrieving order: ${error}`);
-    throw error;
-  }
+  res.status(HttpStatusCode.OK).json({
+    status: "success",
+    data: order,
+  });
 });
 
 /*
@@ -123,20 +118,14 @@ export const getOrder = catchAsync(async (req: Request, res: Response) => {
 export const getAllOrders = catchAsync(async (req: Request, res: Response) => {
   logger.info('Fetching all orders');
 
-  try {
-    const orders = await orderService.getAllOrders();
-    logger.info(`Retrieved ${orders.length} orders successfully`);
+  const orders = await orderService.getAllOrders();
+  logger.info(`Retrieved ${orders.length} orders successfully`);
 
-    res.status(HttpStatusCode.OK).json({
-      status: "success",
-      results: orders.length,
-      data: orders,
-    });
-
-  } catch (error) {
-    logger.error(`Error retrieving orders: ${error}`);
-    throw error;
-  }
+  res.status(HttpStatusCode.OK).json({
+    status: "success",
+    results: orders.length,
+    data: orders,
+  });
 });
 
 /*
@@ -205,22 +194,17 @@ export const getAllOrders = catchAsync(async (req: Request, res: Response) => {
 export const getOrdersByUser = catchAsync(async (req: Request, res: Response) => {
   logger.info('Fetching orders by user ID');
 
-  try {
-    const { userId } = req.params;
-    logger.info(`Fetching orders for user ID: ${userId}`);
+  const { userId } = req.params;
+  logger.info(`Fetching orders for user ID: ${userId}`);
 
-    const orders = await orderService.getOrdersByUserId(Number(userId));
-    logger.info(`Retrieved ${orders.length} orders for user ${userId}`);
+  const orders = await orderService.getOrdersByUserId(Number(userId));
+  logger.info(`Retrieved ${orders.length} orders for user ${userId}`);
 
-    res.status(HttpStatusCode.OK).json({
-      status: "success",
-      results: orders.length,
-      data: orders,
-    });
-  } catch (error) {
-    logger.error(`Error retrieving orders for user: ${error}`);
-    throw error;
-  }
+  res.status(HttpStatusCode.OK).json({
+    status: "success",
+    results: orders.length,
+    data: orders,
+  });
 });
 
 /*
@@ -282,18 +266,13 @@ export const getOrdersByUser = catchAsync(async (req: Request, res: Response) =>
  */
 export const createOrder = catchAsync(async (req: Request, res: Response) => {
   logger.info('Creating new order');
-  try {
-    const order = await orderService.createOrder(req.body);
-    logger.info(`Order created successfully with ID: ${order.booking_id}`);
+  const order = await orderService.createOrder(req.body);
+  logger.info(`Order created successfully with ID: ${order.booking_id}`);
 
-    res.status(HttpStatusCode.CREATED).json({
-      status: "success",
-      data: order,
-    });
-  } catch (error) {
-    logger.error(`Error creating order: ${error}`);
-    throw error;
-  }
+  res.status(HttpStatusCode.CREATED).json({
+    status: "success",
+    data: order,
+  });
 });
 
 /*
@@ -362,23 +341,16 @@ export const updateOrder = catchAsync(async (req: Request, res: Response) => {
 
   logger.info('Updating order');
 
-  try {
+  const { id } = req.params;
+  logger.info(`Updating order with ID: ${id}`);
 
-    const { id } = req.params;
-    logger.info(`Updating order with ID: ${id}`);
+  const order = await orderService.updateOrder(Number(id), req.body);
+  logger.info(`Order ${id} updated successfully`);
 
-    const order = await orderService.updateOrder(Number(id), req.body);
-    logger.info(`Order ${id} updated successfully`);
-
-    res.status(HttpStatusCode.OK).json({
-      status: "success",
-      data: order,
-    });
-
-  } catch (error) {
-    logger.error(`Error updating order: ${error}`);
-    throw error;
-  }
+  res.status(HttpStatusCode.OK).json({
+    status: "success",
+    data: order,
+  });
 });
 
 /*
@@ -446,22 +418,17 @@ export const updateOrder = catchAsync(async (req: Request, res: Response) => {
 export const updateOrderStatus = catchAsync(async (req: Request, res: Response) => {
   logger.info('Updating order status');
 
-  try {
-    const { id } = req.params;
-    const { status } = req.body;
-    logger.info(`Updating status for order ${id} to: ${status}`);
+  const { id } = req.params;
+  const { status } = req.body;
+  logger.info(`Updating status for order ${id} to: ${status}`);
 
-    const order = await orderService.updateOrderStatus(Number(id), status);
-    logger.info(`Order ${id} status updated successfully to: ${status}`);
+  const order = await orderService.updateOrderStatus(Number(id), status);
+  logger.info(`Order ${id} status updated successfully to: ${status}`);
 
-    res.status(HttpStatusCode.OK).json({
-      status: "success",
-      data: order,
-    });
-  } catch (error) {
-    logger.error(`Error updating order status: ${error}`);
-    throw error;
-  }
+  res.status(HttpStatusCode.OK).json({
+    status: "success",
+    data: order,
+  });
 });
 
 /*
@@ -500,19 +467,14 @@ export const updateOrderStatus = catchAsync(async (req: Request, res: Response) 
 export const deleteOrder = catchAsync(async (req: Request, res: Response) => {
   logger.info('Deleting order');
 
-  try {
-    const { id } = req.params;
-    logger.info(`Deleting order with ID: ${id}`);
+  const { id } = req.params;
+  logger.info(`Deleting order with ID: ${id}`);
 
-    await orderService.deleteOrder(Number(id));
-    logger.info(`Order ${id} deleted successfully`);
+  await orderService.deleteOrder(Number(id));
+  logger.info(`Order ${id} deleted successfully`);
 
-    res.status(HttpStatusCode.OK).json({
-      status: "success",
-      message: "Order deleted successfully",
-    });
-  } catch (error) {
-    logger.error(`Error deleting order: ${error}`);
-    throw error;
-  }
+  res.status(HttpStatusCode.OK).json({
+    status: "success",
+    message: "Order deleted successfully",
+  });
 });
