@@ -9,6 +9,37 @@ import AppError from "../utils/AppError.js";
 import * as HttpStatusCode from "../constants/httpStatusCode.js";
 
 class MenuService {
+  /**
+   * @swagger
+   * /menus/date/{date}:
+   *   get:
+   *     summary: Get menus by date
+   *     description: Retrieve all menus for a specific date, optionally filtered by period
+   *     tags: [Menus]
+   *     parameters:
+   *       - in: path
+   *         name: date
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: date
+   *         description: Menu date (YYYY-MM-DD)
+   *       - in: query
+   *         name: menuPeriod
+   *         schema:
+   *           type: string
+   *           enum: [breakfast, lunch, dinner]
+   *         description: Menu period (optional)
+   *     responses:
+   *       200:
+   *         description: List of menus with dish details
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: array
+   *               items:
+   *                 $ref: '#/components/schemas/MenuWithDish'
+   */
   async getMenusByDate(
     date: string,
     menuPeriod?: string
@@ -32,6 +63,23 @@ class MenuService {
     return result.rows;
   }
 
+  /**
+   * @swagger
+   * /menus:
+   *   get:
+   *     summary: Get all menus
+   *     description: Retrieve all menus ordered by date (descending) and dish category
+   *     tags: [Menus]
+   *     responses:
+   *       200:
+   *         description: List of all menus with dish details
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: array
+   *               items:
+   *                 $ref: '#/components/schemas/MenuWithDish'
+   */
   async getAllMenus(): Promise<MenuWithDish[]> {
     const result = await pool.query(`
     SELECT m.*, d.dish_name, d.dish_description, d.dish_category
@@ -42,6 +90,23 @@ class MenuService {
     return result.rows;
   }
 
+  /**
+   * @swagger
+   * /menus/available:
+   *   get:
+   *     summary: Get available menus
+   *     description: Retrieve all menus from today onwards
+   *     tags: [Menus]
+   *     responses:
+   *       200:
+   *         description: List of available menus with dish details
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: array
+   *               items:
+   *                 $ref: '#/components/schemas/MenuWithDish'
+   */
   async getAvailableMenus(): Promise<MenuWithDish[]> {
     const today = new Date().toISOString().split('T')[0];
     
@@ -57,11 +122,60 @@ class MenuService {
     return result.rows;
   }
 
+  /**
+   * @swagger
+   * /menus/today:
+   *   get:
+   *     summary: Get today's menu
+   *     description: Retrieve today's menu, optionally filtered by period
+   *     tags: [Menus]
+   *     parameters:
+   *       - in: query
+   *         name: menuPeriod
+   *         schema:
+   *           type: string
+   *           enum: [breakfast, lunch, dinner]
+   *         description: Menu period (optional)
+   *     responses:
+   *       200:
+   *         description: Today's menu with dish details
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: array
+   *               items:
+   *                 $ref: '#/components/schemas/MenuWithDish'
+   */
   async getTodayMenu(menuPeriod?: string): Promise<MenuWithDish[]> {
     const today = new Date().toISOString().split('T')[0];
     return this.getMenusByDate(today, menuPeriod);
   }
 
+  /**
+   * @swagger
+   * /menus:
+   *   post:
+   *     summary: Create a new menu
+   *     description: Create a new menu entry for a specific dish, date, and period
+   *     tags: [Menus]
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             $ref: '#/components/schemas/CreateMenuInput'
+   *     responses:
+   *       201:
+   *         description: Menu created successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/MenuWithDish'
+   *       404:
+   *         description: Dish not found
+   *       409:
+   *         description: Menu already exists for this dish, date and period
+   */
   async createMenu(menuInput: CreateMenuInput): Promise<MenuWithDish> {
     const { dish_id, menu_date, menu_period } = menuInput;
 
@@ -110,6 +224,38 @@ class MenuService {
     return dishResult.rows[0];
   }
 
+  /**
+   * @swagger
+   * /menus/{id}:
+   *   put:
+   *     summary: Update a menu
+   *     description: Update an existing menu entry
+   *     tags: [Menus]
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: integer
+   *         description: Menu ID
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             $ref: '#/components/schemas/UpdateMenuInput'
+   *     responses:
+   *       200:
+   *         description: Menu updated successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/MenuWithDish'
+   *       400:
+   *         description: No fields to update
+   *       404:
+   *         description: Menu not found
+   */
   async updateMenu(
     id: number,
     menuInput: UpdateMenuInput
@@ -160,6 +306,26 @@ class MenuService {
     return dishResult.rows[0];
   }
 
+  /**
+   * @swagger
+   * /menus/{id}:
+   *   delete:
+   *     summary: Delete a menu
+   *     description: Delete a menu entry by ID
+   *     tags: [Menus]
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: integer
+   *         description: Menu ID
+   *     responses:
+   *       204:
+   *         description: Menu deleted successfully
+   *       404:
+   *         description: Menu not found
+   */
   async deleteMenu(id: number): Promise<void> {
     const result = await pool.query(
       "DELETE FROM menus WHERE id_menu = $1 RETURNING id_menu",
