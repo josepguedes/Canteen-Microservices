@@ -17,3 +17,27 @@ export const getAllUsers = catchAsync(async (req: Request, res: Response) => {
     data: users,
   });
 });
+
+export const deleteUser = catchAsync(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  
+  logger.info(`[UserController] DELETE /users/${id} - Request to delete user`);
+  
+  if (!id) {
+    logger.warn("[UserController] User ID is missing");
+    return res.status(HttpStatusCode.BAD_REQUEST).json({
+      success: false,
+      message: "User ID is required",
+    });
+  }
+  
+  const deletedUser = await UserService.deleteUser(id);
+  
+  logger.info(`[UserController] Successfully deleted user with ID: ${id}`);
+  
+  res.status(HttpStatusCode.OK).json({
+    success: true,
+    message: "User deleted successfully",
+    data: deletedUser,
+  });
+});

@@ -20,3 +20,20 @@ export const getAllUsers = async () => {
   
   return result.rows;
 };
+
+export const deleteUser = async (userId: string) => {
+  logger.info(`[UserModel] Deleting user with ID: ${userId}`);
+  
+  const query = "DELETE FROM users WHERE id = $1 RETURNING id, email, name";
+  
+  const result = await pool.query(query, [userId]);
+  
+  if (result.rowCount === 0) {
+    logger.warn(`[UserModel] User with ID ${userId} not found`);
+    return null;
+  }
+  
+  logger.info(`[UserModel] Successfully deleted user with ID: ${userId}`);
+  
+  return result.rows[0];
+};
