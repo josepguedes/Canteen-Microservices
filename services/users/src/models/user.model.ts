@@ -57,3 +57,67 @@ export const deleteUser = async (userId: string) => {
 
   return result.rows[0];
 };
+
+export const getUserByEmail = async (email: string) => {
+  logger.info(`[UserModel] Fetching user by email: ${email}`);
+
+  const query = "SELECT id, email, name, password FROM users WHERE email = $1";
+
+  const result = await pool.query(query, [email]);
+
+  if (result.rows.length === 0) {
+    logger.warn(`[UserModel] User with email ${email} not found`);
+    return null;
+  }
+
+  logger.info(`[UserModel] Successfully found user with email: ${email}`);
+
+  return result.rows[0];
+};
+
+export const updateUser = async (
+  userId: string,
+  email?: string,
+  name?: string,
+) => {
+  logger.info(`[UserModel] Updating user with ID: ${userId}`);
+
+  const updates: string[] = [];
+  const values: any[] = [];
+  let paramCount = 1;
+
+  if (email !== undefined) {
+    updates.push(`email = $${paramCount}`);
+    values.push(email);
+    paramCount++;
+  }
+
+  if (name !== undefined) {
+    updates.push(`name = $${paramCount}`);
+    values.push(name);
+    paramCount++;
+  }
+
+  if (updates.length === 0) {
+    logger.warn(
+      `[UserModel] No fields provided to update for user ID: ${userId}`,
+    );
+    return null;
+  }
+
+  updates.push(`updated_at = NOW()`);
+  values.push(userId);
+
+  const query = `UPDATE users SET ${updates.join(", ")} WHERE id = $${paramCount} RETURNING id, email, name, created_at, updated_at`;
+
+  const result = await pool.query(query, values);
+
+  if (result.rowCount === 0) {
+    logger.warn(`[UserModel] User with ID ${userId} not found`);
+    return null;
+  }
+
+  logger.info(`[UserModel] Successfully updated user with ID: ${userId}`);
+
+  return result.rows[0];
+};
