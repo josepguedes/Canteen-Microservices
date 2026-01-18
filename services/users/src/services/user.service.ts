@@ -134,3 +134,30 @@ export const updateUser = async (
   logger.info(`[UserService] Successfully updated user with ID: ${userId}`);
   return updatedUser;
 };
+
+export const addLikedDish = async (userId: string, dishId: string) => {
+  logger.info(`[UserService] Adding liked dish ${dishId} for user ${userId}`);
+
+  if (!userId || !dishId) {
+    logger.warn("[UserService] Missing userId or dishId for liked dish");
+    throw new AppError(
+      "User ID and Dish ID are required",
+      HttpStatusCode.BAD_REQUEST,
+    );
+  }
+
+  const liked = await UserModel.addLikedDish(userId, dishId);
+
+  if (!liked) {
+    logger.warn(
+      `[UserService] Dish ${dishId} already liked by user ${userId} or user not found`
+    );
+    throw new AppError(
+      "Dish already liked or user not found",
+      HttpStatusCode.CONFLICT,
+    );
+  }
+
+  logger.info(`[UserService] Successfully added liked dish ${dishId} for user ${userId}`);
+  return liked;
+};

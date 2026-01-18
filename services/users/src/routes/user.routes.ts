@@ -10,8 +10,10 @@ router.post("/", UserController.createUser);
 
 router.post("/login", UserController.loginUser);
 
-router.put("/:id", verifyJWT, UserController.updateUser);
+router.post("/likes/:dishId", verifyJWT, UserController.addLikedDish);
 
-router.delete("/:id", verifyJWT, UserController.deleteUser);
+router.put("/", verifyJWT, UserController.updateUser);
+
+router.delete("/", verifyJWT, UserController.deleteUser);
 
 export default router;

@@ -113,3 +113,27 @@ export const updateUser = async (
 
   return result.rows[0];
 };
+
+export const addLikedDish = async (userId: string, dishId: string) => {
+  logger.info(`[UserModel] Adding liked dish ${dishId} for user ${userId}`);
+
+  const query = `
+    INSERT INTO user_liked_dishes (user_id, dish_id, created_at)
+    VALUES ($1, $2, NOW())
+    ON CONFLICT (user_id, dish_id) DO NOTHING
+    RETURNING id, user_id, dish_id, created_at
+  `;
+
+  const result = await pool.query(query, [userId, dishId]);
+
+  if (result.rowCount === 0) {
+    logger.warn(
+      `[UserModel] Dish ${dishId} already liked or user ${userId} missing`
+    );
+    return null;
+  }
+
+  logger.info(`[UserModel] Successfully added liked dish ${dishId} for user ${userId}`);
+
+  return result.rows[0];
+};

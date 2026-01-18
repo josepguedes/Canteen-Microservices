@@ -47,21 +47,23 @@ export const createUser = catchAsync(async (req: Request, res: Response) => {
 });
 
 export const deleteUser = catchAsync(async (req: Request, res: Response) => {
-  const { id } = req.params;
+  const userId = (req as any).userId;
 
-  logger.info(`[UserController] DELETE /users/${id} - Request to delete user`);
+  logger.info(
+    `[UserController] DELETE /users - Request to delete user ${userId}`,
+  );
 
-  if (!id) {
-    logger.warn("[UserController] User ID is missing");
+  if (!userId) {
+    logger.warn("[UserController] User ID is missing from JWT");
     return res.status(HttpStatusCode.BAD_REQUEST).json({
       success: false,
       message: "User ID is required",
     });
   }
 
-  const deletedUser = await UserService.deleteUser(id);
+  const deletedUser = await UserService.deleteUser(userId as string);
 
-  logger.info(`[UserController] Successfully deleted user with ID: ${id}`);
+  logger.info(`[UserController] Successfully deleted user with ID: ${userId}`);
 
   res.status(HttpStatusCode.OK).json({
     success: true,
@@ -99,13 +101,13 @@ export const loginUser = catchAsync(async (req: Request, res: Response) => {
 });
 
 export const updateUser = catchAsync(async (req: Request, res: Response) => {
-  const { id } = req.params;
+  const userId = (req as any).userId;
   const { email, name } = req.body;
 
-  logger.info(`[UserController] PUT /users/${id} - Request to update user`);
+  logger.info(`[UserController] PUT /users - Request to update user ${userId}`);
 
-  if (!id) {
-    logger.warn("[UserController] User ID is missing");
+  if (!userId) {
+    logger.warn("[UserController] User ID is missing from JWT");
     return res.status(HttpStatusCode.BAD_REQUEST).json({
       success: false,
       message: "User ID is required",
@@ -114,7 +116,7 @@ export const updateUser = catchAsync(async (req: Request, res: Response) => {
 
   if (!email && !name) {
     logger.warn(
-      "[UserController] No fields provided to update for user ID: " + id,
+      "[UserController] No fields provided to update for user ID: " + userId,
     );
     return res.status(HttpStatusCode.BAD_REQUEST).json({
       success: false,
@@ -122,13 +124,46 @@ export const updateUser = catchAsync(async (req: Request, res: Response) => {
     });
   }
 
-  const updatedUser = await UserService.updateUser(id, email, name);
+  const updatedUser = await UserService.updateUser(
+    userId as string,
+    email,
+    name,
+  );
 
-  logger.info(`[UserController] Successfully updated user with ID: ${id}`);
+  logger.info(`[UserController] Successfully updated user with ID: ${userId}`);
 
   res.status(HttpStatusCode.OK).json({
     success: true,
     message: "User updated successfully",
     data: updatedUser,
+  });
+});
+
+export const addLikedDish = catchAsync(async (req: Request, res: Response) => {
+  const { dishId } = req.params;
+  const userId = (req as any).userId;
+
+  logger.info(
+    `[UserController] POST /likes/${dishId} - Add liked dish for user ${userId}`,
+  );
+
+  if (!userId || !dishId) {
+    logger.warn("[UserController] Missing userId or dishId");
+    return res.status(HttpStatusCode.BAD_REQUEST).json({
+      success: false,
+      message: "User ID and Dish ID are required",
+    });
+  }
+
+  const liked = await UserService.addLikedDish(userId as string, dishId);
+
+  logger.info(
+    `[UserController] Successfully added liked dish ${dishId} for user ${userId}`,
+  );
+
+  res.status(HttpStatusCode.CREATED).json({
+    success: true,
+    message: "Dish liked successfully",
+    data: liked,
   });
 });
