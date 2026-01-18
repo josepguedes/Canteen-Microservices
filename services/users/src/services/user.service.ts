@@ -2,6 +2,7 @@ import * as UserModel from "../models/user.model";
 import logger from "../utils/logger";
 import AppError from "../utils/AppError";
 import * as HttpStatusCode from "../constants/httpStatusCode";
+import argon2 from "argon2";
 
 export const getAllUsers = async () => {
   logger.info("[UserService] Getting all users");
@@ -15,6 +16,31 @@ export const getAllUsers = async () => {
 
   logger.info(`[UserService] Successfully retrieved ${users.length} users`);
   return users;
+};
+
+export const createUser = async (
+  email: string,
+  name: string,
+  password: string,
+) => {
+  logger.info(`[UserService] Creating user with email: ${email}`);
+
+  if (!email || !name || !password) {
+    logger.warn("[UserService] Missing required fields for user creation");
+    throw new AppError(
+      "Email, name, and password are required",
+      HttpStatusCode.BAD_REQUEST,
+    );
+  }
+
+  const hashedPassword = await argon2.hash(password);
+
+  const createdUser = await UserModel.createUser(email, name, hashedPassword);
+
+  logger.info(
+    `[UserService] Successfully created user with ID: ${createdUser.id}`,
+  );
+  return createdUser;
 };
 
 export const deleteUser = async (userId: string) => {

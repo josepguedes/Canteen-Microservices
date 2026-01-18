@@ -11,29 +11,49 @@ const pool = new Pool({
 
 export const getAllUsers = async () => {
   logger.info("[UserModel] Fetching all users from database");
-  
-  const query = "SELECT id, email, name, created_at, updated_at FROM users ORDER BY created_at DESC";
-  
+
+  const query =
+    "SELECT id, email, name, created_at, updated_at FROM users ORDER BY created_at DESC";
+
   const result = await pool.query(query);
-  
+
   logger.info(`[UserModel] Successfully fetched ${result.rows.length} users`);
-  
+
   return result.rows;
+};
+
+export const createUser = async (
+  email: string,
+  name: string,
+  password: string,
+) => {
+  logger.info(`[UserModel] Creating user with email: ${email}`);
+
+  const query =
+    "INSERT INTO users (email, name, password, created_at, updated_at) VALUES ($1, $2, $3, NOW(), NOW()) RETURNING id, email, name, created_at, updated_at";
+
+  const result = await pool.query(query, [email, name, password]);
+
+  logger.info(
+    `[UserModel] Successfully created user with ID: ${result.rows[0].id}`,
+  );
+
+  return result.rows[0];
 };
 
 export const deleteUser = async (userId: string) => {
   logger.info(`[UserModel] Deleting user with ID: ${userId}`);
-  
+
   const query = "DELETE FROM users WHERE id = $1 RETURNING id, email, name";
-  
+
   const result = await pool.query(query, [userId]);
-  
+
   if (result.rowCount === 0) {
     logger.warn(`[UserModel] User with ID ${userId} not found`);
     return null;
   }
-  
+
   logger.info(`[UserModel] Successfully deleted user with ID: ${userId}`);
-  
+
   return result.rows[0];
 };
