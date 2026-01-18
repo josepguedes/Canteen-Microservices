@@ -10,6 +10,8 @@ router.post("/", UserController.createUser);
 
 router.post("/login", UserController.loginUser);
 
+router.get("/likes", verifyJWT, UserController.getLikedDishes);
+
 router.post("/likes/:dishId", verifyJWT, UserController.addLikedDish);
 
 router.put("/", verifyJWT, UserController.updateUser);

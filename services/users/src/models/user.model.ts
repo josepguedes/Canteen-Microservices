@@ -128,12 +128,33 @@ export const addLikedDish = async (userId: string, dishId: string) => {
 
   if (result.rowCount === 0) {
     logger.warn(
-      `[UserModel] Dish ${dishId} already liked or user ${userId} missing`
+      `[UserModel] Dish ${dishId} already liked or user ${userId} missing`,
     );
     return null;
   }
 
-  logger.info(`[UserModel] Successfully added liked dish ${dishId} for user ${userId}`);
+  logger.info(
+    `[UserModel] Successfully added liked dish ${dishId} for user ${userId}`,
+  );
 
   return result.rows[0];
+};
+
+export const getLikedDishes = async (userId: string) => {
+  logger.info(`[UserModel] Fetching liked dishes for user ${userId}`);
+
+  const query = `
+    SELECT id, user_id, dish_id, created_at
+    FROM user_liked_dishes
+    WHERE user_id = $1
+    ORDER BY created_at DESC
+  `;
+
+  const result = await pool.query(query, [userId]);
+
+  logger.info(
+    `[UserModel] Successfully fetched ${result.rows.length} liked dishes for user ${userId}`,
+  );
+
+  return result.rows;
 };

@@ -167,3 +167,33 @@ export const addLikedDish = catchAsync(async (req: Request, res: Response) => {
     data: liked,
   });
 });
+
+export const getLikedDishes = catchAsync(
+  async (req: Request, res: Response) => {
+    const userId = (req as any).userId;
+
+    logger.info(
+      `[UserController] GET /likes - Request to get liked dishes for user ${userId}`,
+    );
+
+    if (!userId) {
+      logger.warn("[UserController] User ID is missing from JWT");
+      return res.status(HttpStatusCode.BAD_REQUEST).json({
+        success: false,
+        message: "User ID is required",
+      });
+    }
+
+    const likedDishes = await UserService.getLikedDishes(userId as string);
+
+    logger.info(
+      `[UserController] Successfully returning ${likedDishes.length} liked dishes for user ${userId}`,
+    );
+
+    res.status(HttpStatusCode.OK).json({
+      success: true,
+      count: likedDishes.length,
+      data: likedDishes,
+    });
+  },
+);

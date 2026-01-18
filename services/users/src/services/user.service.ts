@@ -150,7 +150,7 @@ export const addLikedDish = async (userId: string, dishId: string) => {
 
   if (!liked) {
     logger.warn(
-      `[UserService] Dish ${dishId} already liked by user ${userId} or user not found`
+      `[UserService] Dish ${dishId} already liked by user ${userId} or user not found`,
     );
     throw new AppError(
       "Dish already liked or user not found",
@@ -158,6 +158,24 @@ export const addLikedDish = async (userId: string, dishId: string) => {
     );
   }
 
-  logger.info(`[UserService] Successfully added liked dish ${dishId} for user ${userId}`);
+  logger.info(
+    `[UserService] Successfully added liked dish ${dishId} for user ${userId}`,
+  );
   return liked;
+};
+
+export const getLikedDishes = async (userId: string) => {
+  logger.info(`[UserService] Getting liked dishes for user ${userId}`);
+
+  if (!userId) {
+    logger.warn("[UserService] Missing userId");
+    throw new AppError("User ID is required", HttpStatusCode.BAD_REQUEST);
+  }
+
+  const likedDishes = await UserModel.getLikedDishes(userId);
+
+  logger.info(
+    `[UserService] Successfully retrieved ${likedDishes.length} liked dishes for user ${userId}`,
+  );
+  return likedDishes;
 };
