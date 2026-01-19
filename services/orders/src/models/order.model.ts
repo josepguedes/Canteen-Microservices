@@ -1,4 +1,15 @@
-import pool from '../config/database';
+import { Pool } from "pg";
+import dotenv from "dotenv";
+
+dotenv.config();
+
+const pool = new Pool({
+  host: process.env.DB_HOST,
+  port: Number(process.env.DB_PORT),
+  database: process.env.DB_NAME,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+});
 
 export type MealType = 'lunch' | 'dinner';
 export type BookingStatus = 'pending' | 'confirmed' | 'cancelled' | 'completed';
@@ -7,18 +18,9 @@ export interface IBooking {
     booking_id?: number;
     user_id: number;
     menu_id: number;
-    meal_type: MealType;
-    booking_date: Date;
     status: BookingStatus;
     created_at?: Date;
     updated_at?: Date;
-}
-
-export interface IBookingRequest {
-    user_id: number;
-    meal_type: MealType;
-    booking_date: Date | string;
-    status?: BookingStatus;
 }
 
 // Model methods with database logic
@@ -49,13 +51,13 @@ export const findByUserId = async (userId: number): Promise<IBooking[]> => {
 };
 
 export const create = async (orderData: IBooking): Promise<IBooking> => {
-  const { user_id, menu_id, meal_type, booking_date, status } = orderData;
+  const { user_id, menu_id, status } = orderData;
 
   const result = await pool.query(
-    `INSERT INTO bookings (user_id, menu_id, meal_type, booking_date, status, created_at, updated_at) 
-     VALUES ($1, $2, $3, $4, $5, NOW(), NOW()) 
+    `INSERT INTO bookings (user_id, menu_id, status, created_at, updated_at) 
+     VALUES ($1, $2, $3, NOW(), NOW()) 
      RETURNING *`,
-    [user_id, menu_id, meal_type, booking_date, status || "pending"]
+    [user_id, menu_id, status || "pending"]
   );
 
   return result.rows[0];
@@ -65,19 +67,17 @@ export const update = async (
   id: number,
   orderData: Partial<IBooking>
 ): Promise<IBooking> => {
-  const { user_id, menu_id, meal_type, booking_date, status } = orderData;
+  const { user_id, menu_id, status } = orderData;
 
   const result = await pool.query(
     `UPDATE bookings 
      SET user_id = COALESCE($1, user_id),
          menu_id = COALESCE($2, menu_id),
-         meal_type = COALESCE($3, meal_type),
-         booking_date = COALESCE($4, booking_date),
-         status = COALESCE($5, status),
+         status = COALESCE($3, status),
          updated_at = NOW()
-     WHERE booking_id = $6
+     WHERE booking_id = $4
      RETURNING *`,
-    [user_id, menu_id, meal_type, booking_date, status, id]
+    [user_id, menu_id, status, id]
   );
 
   return result.rows[0];
