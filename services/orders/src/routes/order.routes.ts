@@ -1,11 +1,11 @@
 import express from "express";
 import * as orderController from "../controllers/order.controller";
-// import verifyJWT from "../middleware/verifyJWT";
+import verifyJWT from "../middleware/verifyJWT";
 
 const router = express.Router();
 
 // Apply JWT verification to all routes
-// router.use(verifyJWT);
+router.use(verifyJWT);
 
 // Get all orders
 router.get("/", orderController.getAllOrders);

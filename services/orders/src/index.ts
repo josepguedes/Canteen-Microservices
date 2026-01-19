@@ -9,24 +9,17 @@ dotenv.config();
 const app = express();
 app.use(express.json());
 
-// Health check route
-app.get("/health", (req, res) => {
-  res.status(200).json({ 
-    status: "ok", 
-    service: "orders",
-    timestamp: new Date().toISOString() 
-  });
-});
 
 // Routes
 app.use("/orders", orderRoutes);
 
-const PORT = process.env.PORT || 3002;
+const PORT = process.env.PORT || 5001;
+
+app.use(errorHandler);
 
 app.listen(PORT, () => {
   const url = `http://localhost:${PORT}`;
-  console.log(`\n🚀 Orders service running at: ${url}`);
-  logger.info(`Orders service running on port ${PORT}`);
+  logger.info(`Orders service running on port ${PORT} - ${url}`);
 });
 
 app.use(errorHandler);
