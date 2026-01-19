@@ -2,7 +2,8 @@
   "type": "module",
   "scripts": {
     "compile": "tsc",
-    "dev": "npm run compile && node ./dist/index.js"
+    "dev": "npm run compile && node ./dist/index.js",
+    "start": "node dist/index.js"
   },
   "dependencies": {
     "express": "^4.21.2",

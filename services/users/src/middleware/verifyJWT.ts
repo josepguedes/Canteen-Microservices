@@ -18,8 +18,8 @@ const verifyJWT = (req: AuthRequest, res: Response, next: NextFunction) => {
       new AppError(
         "Session invalid or expired",
         HttpStatusCode.UNAUTHORIZED,
-        AppErrorCode.InvalidAccessToken
-      )
+        AppErrorCode.InvalidAccessToken,
+      ),
     );
   }
 
@@ -29,8 +29,8 @@ const verifyJWT = (req: AuthRequest, res: Response, next: NextFunction) => {
       new AppError(
         "Token missing from Authorization header",
         HttpStatusCode.UNAUTHORIZED,
-        AppErrorCode.InvalidAccessToken
-      )
+        AppErrorCode.InvalidAccessToken,
+      ),
     );
   }
 
@@ -43,8 +43,8 @@ const verifyJWT = (req: AuthRequest, res: Response, next: NextFunction) => {
       new AppError(
         "Session invalid or expired",
         HttpStatusCode.UNAUTHORIZED,
-        AppErrorCode.InvalidAccessToken
-      )
+        AppErrorCode.InvalidAccessToken,
+      ),
     );
   }
 };

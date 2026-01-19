@@ -1,0 +1,61 @@
+services:
+  postgres:
+    image: postgres:15
+    container_name: db_container
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: user_db_owner
+      POSTGRES_PASSWORD: vanveen321
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db:/docker-entrypoint-initdb.d
+
+  # Users microservice
+  users-service:
+    build:
+      context: ./services/users
+      dockerfile: Dockerfile
+    container_name: canteen-users-service
+    env_file:
+      - ./services/users/.env
+    ports:
+      - "5000:5000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Menu microservice
+  menu-service:
+    build:
+      context: ./services/menu
+      dockerfile: Dockerfile
+    container_name: canteen-menu-service
+    env_file:
+      - ./services/menu/.env
+    ports:
+      - "5002:5002"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Orders microservice
+  orders-service:
+    build:
+      context: ./services/orders
+      dockerfile: Dockerfile
+    container_name: canteen-orders-service
+    env_file:
+      - ./services/orders/.env
+    ports:
+      - "5001:5001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
