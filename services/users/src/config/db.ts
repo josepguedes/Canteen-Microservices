@@ -13,7 +13,7 @@ const pool = new Pool({
 });
 
 pool.on("error", (err) => {
-  logger.error("[DB] Unexpected error on idle client", err);
+  logger.error(err, "[DB] Unexpected error on idle client");
 });
 
 logger.info("[DB] PostgreSQL pool initialized");

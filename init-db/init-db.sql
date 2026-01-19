@@ -2,6 +2,16 @@
 -- Matches the codebase expectations: users table with auth fields and a normalized
 -- user_liked_dishes table storing only dish IDs (dish data lives in another microservice).
 
+-- Create database
+CREATE DATABASE users_canteen;
+
+-- Create user with password
+CREATE USER user_db_owner WITH PASSWORD 'vanveen321';
+
+-- Grant permissions to user
+ALTER DATABASE users_canteen OWNER TO user_db_owner;
+GRANT CONNECT ON DATABASE users_canteen TO user_db_owner;
+
 BEGIN;
 
 -- Ensure UUID generation is available
@@ -30,5 +40,15 @@ CREATE TABLE IF NOT EXISTS user_liked_dishes (
 CREATE INDEX IF NOT EXISTS idx_users_email ON users (email);
 CREATE INDEX IF NOT EXISTS idx_user_liked_dishes_user ON user_liked_dishes (user_id);
 CREATE INDEX IF NOT EXISTS idx_user_liked_dishes_dish ON user_liked_dishes (dish_id);
+
+-- Grant all table permissions to user_db_owner
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO user_db_owner;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO user_db_owner;
+GRANT ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA public TO user_db_owner;
+
+-- Set default privileges for future tables
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL PRIVILEGES ON TABLES TO user_db_owner;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL PRIVILEGES ON SEQUENCES TO user_db_owner;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL PRIVILEGES ON FUNCTIONS TO user_db_owner;
 
 COMMIT;

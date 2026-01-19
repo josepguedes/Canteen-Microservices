@@ -1,8 +1,8 @@
-import { Request, Response } from 'express';
-import dishService from '../services/dish.service.js';
-import AppError from '../utils/AppError.js';
-import * as HttpStatusCode from '../constants/httpStatusCode.js';
-import logger from '../utils/logger.js';
+import { Request, Response } from "express";
+import dishService from "../services/dish.service.js";
+import AppError from "../utils/AppError.js";
+import * as HttpStatusCode from "../constants/httpStatusCode.js";
+import logger from "../utils/logger.js";
 
 class DishController {
   // GET /menu/dishes - Get all dishes
@@ -24,7 +24,7 @@ class DishController {
       } else {
         res.status(500).json({
           success: false,
-          message: 'Internal server error',
+          message: "Internal server error",
         });
       }
     }
@@ -50,7 +50,7 @@ class DishController {
       } else {
         res.status(500).json({
           success: false,
-          message: 'Internal server error',
+          message: "Internal server error",
         });
       }
     }
@@ -59,7 +59,9 @@ class DishController {
   // GET /menu/dishes/category/:category - Get dishes by category
   async getDishesByCategory(req: Request, res: Response) {
     try {
-      const category = req.params.category;
+      const category = Array.isArray(req.params.category)
+        ? req.params.category[0]
+        : req.params.category;
       logger.info({ category }, "Controller: Fetching dishes by category");
       const dishes = await dishService.getDishesByCategory(category);
       res.status(200).json({
@@ -76,7 +78,7 @@ class DishController {
       } else {
         res.status(500).json({
           success: false,
-          message: 'Internal server error',
+          message: "Internal server error",
         });
       }
     }
@@ -101,7 +103,7 @@ class DishController {
       } else {
         res.status(500).json({
           success: false,
-          message: 'Internal server error',
+          message: "Internal server error",
         });
       }
     }
@@ -127,7 +129,7 @@ class DishController {
       } else {
         res.status(500).json({
           success: false,
-          message: 'Internal server error',
+          message: "Internal server error",
         });
       }
     }
@@ -141,7 +143,7 @@ class DishController {
       await dishService.deleteDish(id);
       res.status(200).json({
         success: true,
-        message: 'Dish deleted successfully',
+        message: "Dish deleted successfully",
       });
     } catch (error) {
       logger.error({ error }, "Controller: Error in deleteDish");
@@ -153,7 +155,7 @@ class DishController {
       } else {
         res.status(500).json({
           success: false,
-          message: 'Internal server error',
+          message: "Internal server error",
         });
       }
     }
