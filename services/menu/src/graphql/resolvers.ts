@@ -59,19 +59,19 @@ export const resolvers = {
       }
     },
 
-    dishesByCategory: async (_: any, { category }: { category: string }) => {
-      logger.info({ category }, "GraphQL: Fetching dishes by category");
+    // Menus
+    menus: async () => {
+      logger.info("GraphQL: Fetching all menus");
       try {
-        const dishes = await dishService.getDishesByCategory(category);
-        logger.info({ category, count: dishes.length }, "GraphQL: Dishes fetched by category");
-        return dishes.map(formatDish);
+        const menus = await menuService.getAllMenus();
+        logger.info({ count: menus.length }, "GraphQL: All menus fetched successfully");
+        return menus.map(formatMenu);
       } catch (error) {
-        logger.error({ category, error }, "GraphQL: Error fetching dishes by category");
+        logger.error({ error }, "GraphQL: Error fetching all menus");
         throw error;
       }
     },
 
-    // Menus
     menusByDate: async (_: any, { date, menuPeriod }: { date: string; menuPeriod?: string }) => {
       logger.info({ date, menuPeriod }, "GraphQL: Fetching menus by date");
       try {
@@ -80,6 +80,21 @@ export const resolvers = {
         return menus.map(formatMenu);
       } catch (error) {
         logger.error({ date, menuPeriod, error }, "GraphQL: Error fetching menus");
+        throw error;
+      }
+    },
+
+    menusByDateAndCategory: async (_: any, { date, menuPeriod, dishCategory }: { date: string; menuPeriod: string; dishCategory: string }) => {
+      logger.info({ date, menuPeriod, dishCategory }, "GraphQL: Fetching menu by date, period and category");
+      try {
+        const menus = await menuService.getMenusByDate(date, menuPeriod);
+        const menu = menus.find(m => m.dish_category === dishCategory);
+        if (!menu) {
+          throw new Error(`No menu found for ${dishCategory} on ${date} during ${menuPeriod}`);
+        }
+        return formatMenu(menu);
+      } catch (error) {
+        logger.error({ date, menuPeriod, dishCategory, error }, "GraphQL: Error fetching menu");
         throw error;
       }
     },
