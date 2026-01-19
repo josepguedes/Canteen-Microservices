@@ -9,7 +9,7 @@ class DishService {
     logger.info("Fetching all dishes");
     
     const result = await pool.query(
-      'SELECT * FROM dishes ORDER BY dish_category, dish_name'
+      'SELECT * FROM dishes ORDER BY dish_name'
     );
     
     logger.info({ count: result.rows.length }, "All dishes fetched successfully");
@@ -34,14 +34,14 @@ class DishService {
   }
 
   async createDish(dishInput: CreateDishInput): Promise<Dish> {
-    const { dish_name, dish_description, dish_category } = dishInput;
-    logger.info({ dish_name, dish_category }, "Creating new dish");
+    const { dish_name, dish_description } = dishInput;
+    logger.info({ dish_name }, "Creating new dish");
 
     const result = await pool.query(
-      `INSERT INTO dishes (dish_name, dish_description, dish_category)
-       VALUES ($1, $2, $3)
+      `INSERT INTO dishes (dish_name, dish_description)
+       VALUES ($1, $2)
        RETURNING *`,
-      [dish_name, dish_description, dish_category]
+      [dish_name, dish_description]
     );
 
     logger.info({ dishId: result.rows[0].id_dish }, "Dish created successfully");
@@ -62,10 +62,6 @@ class DishService {
     if (dishInput.dish_description !== undefined) {
       fields.push(`dish_description = $${paramCount++}`);
       values.push(dishInput.dish_description);
-    }
-    if (dishInput.dish_category !== undefined) {
-      fields.push(`dish_category = $${paramCount++}`);
-      values.push(dishInput.dish_category);
     }
 
     if (fields.length === 0) {
@@ -105,27 +101,15 @@ class DishService {
     logger.info({ id }, "Dish deleted successfully");
   }
 
-  async getDishesByCategory(category: string): Promise<Dish[]> {
-    logger.info({ category }, "Fetching dishes by category");
-    
-    const result = await pool.query(
-      'SELECT * FROM dishes WHERE dish_category = $1 ORDER BY dish_name',
-      [category]
-    );
-    
-    logger.info({ category, count: result.rows.length }, "Dishes fetched by category");
-    return result.rows;
-  }
-
   async getDishesByName(name: string): Promise<Dish[]> {
     logger.info({ name }, "Searching dishes by name");
     
     const result = await pool.query(
-      'SELECT * FROM dishes WHERE dish_name ILIKE $1 ORDER BY dish_name',
+      'SELECT * FROM dishes WHERE dish_name ILIKE $1',
       [`%${name}%`]
     );
-    
-    logger.info({ name, count: result.rows.length }, "Dishes found by name");
+
+    logger.info({ name, count: result.rows.length }, "Dishes found");
     return result.rows;
   }
 }

@@ -1,10 +1,8 @@
 import { Pool } from "pg";
 import dotenv from "dotenv";
 
-// Load environment variables
 dotenv.config();
 
-// Create a PostgreSQL connection pool
 const pool = new Pool({
   host: process.env.DB_HOST,
   port: Number(process.env.DB_PORT),
@@ -19,8 +17,7 @@ export type BookingStatus = 'pending' | 'confirmed' | 'cancelled' | 'completed';
 export interface IBooking {
     booking_id?: number;
     user_id: number;
-    meal_type: MealType;
-    booking_date: Date;
+    menu_id: number;
     status: BookingStatus;
     created_at?: Date;
     updated_at?: Date;
@@ -54,13 +51,13 @@ export const findByUserId = async (userId: number): Promise<IBooking[]> => {
 };
 
 export const create = async (orderData: IBooking): Promise<IBooking> => {
-  const { user_id, meal_type, booking_date, status } = orderData;
+  const { user_id, menu_id, status } = orderData;
 
   const result = await pool.query(
-    `INSERT INTO bookings (user_id, meal_type, booking_date, status, created_at, updated_at) 
-     VALUES ($1, $2, $3, $4, NOW(), NOW()) 
+    `INSERT INTO bookings (user_id, menu_id, status, created_at, updated_at) 
+     VALUES ($1, $2, $3, NOW(), NOW()) 
      RETURNING *`,
-    [user_id, meal_type, booking_date, status || "pending"]
+    [user_id, menu_id, status || "pending"]
   );
 
   return result.rows[0];
@@ -70,18 +67,17 @@ export const update = async (
   id: number,
   orderData: Partial<IBooking>
 ): Promise<IBooking> => {
-  const { user_id, meal_type, booking_date, status } = orderData;
+  const { user_id, menu_id, status } = orderData;
 
   const result = await pool.query(
     `UPDATE bookings 
      SET user_id = COALESCE($1, user_id),
-         meal_type = COALESCE($2, meal_type),
-         booking_date = COALESCE($3, booking_date),
-         status = COALESCE($4, status),
+         menu_id = COALESCE($2, menu_id),
+         status = COALESCE($3, status),
          updated_at = NOW()
-     WHERE booking_id = $5
+     WHERE booking_id = $4
      RETURNING *`,
-    [user_id, meal_type, booking_date, status, id]
+    [user_id, menu_id, status, id]
   );
 
   return result.rows[0];

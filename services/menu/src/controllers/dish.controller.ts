@@ -56,8 +56,8 @@ class DishController {
     }
   }
 
-  // GET /menu/dishes/category/:category - Get dishes by category
-  async getDishesByCategory(req: Request, res: Response) {
+  // GET /menu/dishes/search/:name - Get dishes by name
+  async getDishesByName(req: Request, res: Response) {
     try {
       const category = Array.isArray(req.params.category)
         ? req.params.category[0]
@@ -69,7 +69,7 @@ class DishController {
         data: dishes,
       });
     } catch (error) {
-      logger.error({ error }, "Controller: Error in getDishesByCategory");
+      logger.error({ error }, "Controller: Error in getDishesByName");
       if (error instanceof AppError) {
         res.status(error.statusCode).json({
           success: false,

@@ -31,18 +31,18 @@ export const getOrdersByUserId = async (userId: number): Promise<IBooking[]> => 
 
 // Create a new order
 export const createOrder = async (orderData: IBooking): Promise<IBooking> => {
-  const { user_id, meal_type, booking_date } = orderData;
+  const { user_id, menu_id } = orderData;
 
   // Validate required fields
-  if (!user_id || !meal_type || !booking_date) {
-    logger.error(`Missing required fields for order creation: user_id=${user_id}, meal_type=${meal_type}, booking_date=${booking_date}`);
+  if (!user_id || !menu_id) {
+    logger.error(`Missing required fields for order creation: user_id=${user_id}, menu_id=${menu_id}`);
     throw new AppError(
-      "Missing required fields",
+      "Missing required fields: user_id and menu_id are required",
       HttpStatusCode.BAD_REQUEST
     );
   }
 
-  logger.info(`Creating order for user ${user_id}, meal_type: ${meal_type}, date: ${booking_date}`);
+  logger.info(`Creating order for user ${user_id}, menu_id: ${menu_id}`);
 
   return await OrderModel.create(orderData);
 };
