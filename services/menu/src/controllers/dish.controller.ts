@@ -59,7 +59,9 @@ class DishController {
   // GET /menu/dishes/category/:category - Get dishes by category
   async getDishesByCategory(req: Request, res: Response) {
     try {
-      const category = req.params.category;
+      const category = Array.isArray(req.params.category) 
+        ? req.params.category[0] 
+        : req.params.category;
       logger.info({ category }, "Controller: Fetching dishes by category");
       const dishes = await dishService.getDishesByCategory(category);
       res.status(200).json({

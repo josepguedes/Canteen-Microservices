@@ -1,17 +1,4 @@
-import { Pool } from "pg";
-import dotenv from "dotenv";
-
-// Load environment variables
-dotenv.config();
-
-// Create a PostgreSQL connection pool
-const pool = new Pool({
-  host: process.env.DB_HOST,
-  port: Number(process.env.DB_PORT),
-  database: process.env.DB_NAME,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-});
+import pool from '../config/database';
 
 export type MealType = 'lunch' | 'dinner';
 export type BookingStatus = 'pending' | 'confirmed' | 'cancelled' | 'completed';
