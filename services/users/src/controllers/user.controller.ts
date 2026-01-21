@@ -42,7 +42,9 @@ export const getUserById = catchAsync(async (req: Request, res: Response) => {
     });
   }
 
-  if (id !== userId) {
+  console.log(String(id), String(userId));
+
+  if (String(id) !== String(userId)) {
     logger.warn(
       `[UserController] User ${userId} attempted to access user ${id}'s data`,
     );
