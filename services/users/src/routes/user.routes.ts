@@ -6,6 +6,8 @@ const router = express.Router();
 
 router.get("/", verifyJWT, UserController.getAllUsers);
 
+router.get("/:id", verifyJWT, UserController.getUserById);
+
 router.post("/", UserController.createUser);
 
 router.post("/login", UserController.loginUser);

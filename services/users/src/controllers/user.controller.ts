@@ -18,6 +18,52 @@ export const getAllUsers = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+export const getUserById = catchAsync(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const userId = (req as any).userId;
+
+  logger.info(
+    `[UserController] GET /users/${id} - Request to get user by ID`,
+  );
+
+  if (!id) {
+    logger.warn("[UserController] User ID parameter is missing");
+    return res.status(HttpStatusCode.BAD_REQUEST).json({
+      success: false,
+      message: "User ID is required",
+    });
+  }
+
+  if (!userId) {
+    logger.warn("[UserController] User ID is missing from JWT");
+    return res.status(HttpStatusCode.UNAUTHORIZED).json({
+      success: false,
+      message: "Unauthorized",
+    });
+  }
+
+  if (id !== userId) {
+    logger.warn(
+      `[UserController] User ${userId} attempted to access user ${id}'s data`,
+    );
+    return res.status(HttpStatusCode.FORBIDDEN).json({
+      success: false,
+      message: "You can only access your own user data",
+    });
+  }
+
+  const user = await UserService.getUserById(id);
+
+  logger.info(
+    `[UserController] Successfully returning user with ID: ${id}`,
+  );
+
+  res.status(HttpStatusCode.OK).json({
+    success: true,
+    data: user,
+  });
+});
+
 export const createUser = catchAsync(async (req: Request, res: Response) => {
   const { email, name, password } = req.body;
 

@@ -19,6 +19,25 @@ export const getAllUsers = async () => {
   return users;
 };
 
+export const getUserById = async (userId: string) => {
+  logger.info(`[UserService] Getting user with ID: ${userId}`);
+
+  if (!userId) {
+    logger.warn("[UserService] Missing userId");
+    throw new AppError("User ID is required", HttpStatusCode.BAD_REQUEST);
+  }
+
+  const user = await UserModel.getUserById(userId);
+
+  if (!user) {
+    logger.warn(`[UserService] User with ID ${userId} not found`);
+    throw new AppError("User not found", HttpStatusCode.NOT_FOUND);
+  }
+
+  logger.info(`[UserService] Successfully retrieved user with ID: ${userId}`);
+  return user;
+};
+
 export const createUser = async (
   email: string,
   name: string,
