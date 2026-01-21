@@ -50,6 +50,23 @@ export const deleteUser = async (userId: string) => {
   return result.rows[0];
 };
 
+export const getUserById = async (userId: string) => {
+  logger.info(`[UserModel] Fetching user by ID: ${userId}`);
+
+  const query = "SELECT id, email, name, created_at, updated_at FROM users WHERE id = $1";
+
+  const result = await pool.query(query, [userId]);
+
+  if (result.rows.length === 0) {
+    logger.warn(`[UserModel] User with ID ${userId} not found`);
+    return null;
+  }
+
+  logger.info(`[UserModel] Successfully found user with ID: ${userId}`);
+
+  return result.rows[0];
+};
+
 export const getUserByEmail = async (email: string) => {
   logger.info(`[UserModel] Fetching user by email: ${email}`);
 
