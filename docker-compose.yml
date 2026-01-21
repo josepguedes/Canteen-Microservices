@@ -60,7 +60,21 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    restart: unless-stopped  
+    restart: unless-stopped
+
+  # Nginx API Gateway
+  api-gateway:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    container_name: canteen-api-gateway
+    ports:
+      - "8080:80"
+    depends_on:
+      - users-service
+      - menu-service
+      - orders-service
+    restart: unless-stopped
 
 volumes:
   postgres_data:
