@@ -17,15 +17,17 @@ class MenuService {
     logger.info({ date, menuPeriod }, "Fetching menus by date");
 
     let query = `
-      SELECT m.*, d.dish_name, d.dish_description
+      SELECT m.*, d.dish_name, d.dish_description, 
+             pt.menu_period, pt.start_time, pt.end_time
       FROM menus m
       JOIN dishes d ON m.dish_id = d.id_dish
+      JOIN period_time pt ON m.period_id = pt.id
       WHERE m.menu_date = $1
     `;
     const params: any[] = [date];
 
     if (menuPeriod) {
-      query += ` AND m.menu_period = $2`;
+      query += ` AND pt.menu_period = $2`;
       params.push(menuPeriod);
     }
 
@@ -40,9 +42,11 @@ class MenuService {
     logger.info("Fetching all menus");
 
     const result = await pool.query(`
-      SELECT m.*, d.dish_name, d.dish_description
+      SELECT m.*, d.dish_name, d.dish_description,
+             pt.menu_period, pt.start_time, pt.end_time
       FROM menus m
       JOIN dishes d ON m.dish_id = d.id_dish
+      JOIN period_time pt ON m.period_id = pt.id
       ORDER BY m.menu_date DESC, m.dish_category
     `);
 
@@ -57,9 +61,11 @@ class MenuService {
     logger.info({ id }, "Fetching menu by ID");
 
     const result = await pool.query(
-      `SELECT m.*, d.dish_name, d.dish_description
+      `SELECT m.*, d.dish_name, d.dish_description,
+              pt.menu_period, pt.start_time, pt.end_time
        FROM menus m
        JOIN dishes d ON m.dish_id = d.id_dish
+       JOIN period_time pt ON m.period_id = pt.id
        WHERE m.id_menu = $1`,
       [id],
     );
@@ -82,7 +88,7 @@ class MenuService {
   async createMenu(input: CreateMenuInput): Promise<Menu> {
     logger.info({ input }, "Creating new menu");
 
-    const { dish_id, dish_category, menu_date, menu_period } = input;
+    const { dish_id, dish_category, menu_date, period_id } = input;
 
     // Validate that the dish exists
     const dishResult = await pool.query(
@@ -97,21 +103,33 @@ class MenuService {
       );
     }
 
+    // Validate that the period exists
+    const periodResult = await pool.query(
+      "SELECT * FROM period_time WHERE id = $1",
+      [period_id],
+    );
+
+    if (periodResult.rows.length === 0) {
+      throw new AppError(
+        `Period with ID ${period_id} not found`,
+        HttpStatusCode.NOT_FOUND,
+      );
+    }
+
     try {
       const result = await pool.query(
-        `INSERT INTO menus (dish_id, dish_category, menu_date, menu_period, created_at)
+        `INSERT INTO menus (dish_id, period_id, dish_category, menu_date, created_at)
          VALUES ($1, $2, $3, $4, NOW())
          RETURNING *`,
-        [dish_id, dish_category, menu_date, menu_period],
+        [dish_id, period_id, dish_category, menu_date],
       );
 
       logger.info({ id: result.rows[0].id_menu }, "Menu created successfully");
       return result.rows[0];
     } catch (error: any) {
       if (error.code === "23505") {
-        // Unique violation
         throw new AppError(
-          `A menu for ${dish_category} already exists for ${menu_period} on ${menu_date}`,
+          `A menu for ${dish_category} already exists for this period on ${menu_date}`,
           HttpStatusCode.CONFLICT,
         );
       }
@@ -127,7 +145,6 @@ class MenuService {
     let paramCount = 1;
 
     if (input.dish_id !== undefined) {
-      // Validate that the dish exists
       const dishResult = await pool.query(
         "SELECT * FROM dishes WHERE id_dish = $1",
         [input.dish_id],
@@ -144,6 +161,23 @@ class MenuService {
       values.push(input.dish_id);
     }
 
+    if (input.period_id !== undefined) {
+      const periodResult = await pool.query(
+        "SELECT * FROM period_time WHERE id = $1",
+        [input.period_id],
+      );
+
+      if (periodResult.rows.length === 0) {
+        throw new AppError(
+          `Period with ID ${input.period_id} not found`,
+          HttpStatusCode.NOT_FOUND,
+        );
+      }
+
+      fields.push(`period_id = $${paramCount++}`);
+      values.push(input.period_id);
+    }
+
     if (input.dish_category !== undefined) {
       fields.push(`dish_category = $${paramCount++}`);
       values.push(input.dish_category);
@@ -152,11 +186,6 @@ class MenuService {
     if (input.menu_date !== undefined) {
       fields.push(`menu_date = $${paramCount++}`);
       values.push(input.menu_date);
-    }
-
-    if (input.menu_period !== undefined) {
-      fields.push(`menu_period = $${paramCount++}`);
-      values.push(input.menu_period);
     }
 
     if (fields.length === 0) {
@@ -204,6 +233,13 @@ class MenuService {
     }
 
     logger.info({ id }, "Menu deleted successfully");
+  }
+
+  // NOVA função para buscar períodos disponíveis
+  async getPeriods() {
+    logger.info("Fetching all periods");
+    const result = await pool.query("SELECT * FROM period_time ORDER BY id");
+    return result.rows;
   }
 }
 
