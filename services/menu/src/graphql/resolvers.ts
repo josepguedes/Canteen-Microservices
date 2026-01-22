@@ -1,10 +1,11 @@
-import dishService from '../services/dish.service.js';
-import menuService from '../services/dailyMenu.service.js';
-import logger from '../utils/logger.js';
+import dishService from "../services/dish.service.js";
+import menuService from "../services/dailyMenu.service.js";
+import periodTimeService from "../services/periodTime.service.js";
+import logger from "../utils/logger.js";
 
 // Helper function to format dates
 const formatDate = (date: Date | string): string => {
-  if (!date) return '';
+  if (!date) return "";
   return new Date(date).toISOString();
 };
 
@@ -20,6 +21,12 @@ const formatMenu = (menu: any) => ({
   created_at: formatDate(menu.created_at),
 });
 
+// Helper to format period with proper dates
+const formatPeriod = (period: any) => ({
+  ...period,
+  created_at: formatDate(period.created_at),
+});
+
 export const resolvers = {
   Query: {
     // Dishes
@@ -27,7 +34,10 @@ export const resolvers = {
       logger.info("GraphQL: Fetching all dishes");
       try {
         const dishes = await dishService.getAllDishes();
-        logger.info({ count: dishes.length }, "GraphQL: Dishes fetched successfully");
+        logger.info(
+          { count: dishes.length },
+          "GraphQL: Dishes fetched successfully",
+        );
         return dishes.map(formatDish);
       } catch (error) {
         logger.error({ error }, "GraphQL: Error fetching dishes");
@@ -59,12 +69,43 @@ export const resolvers = {
       }
     },
 
+    // Periods
+    periods: async () => {
+      logger.info("GraphQL: Fetching all periods");
+      try {
+        const periods = await periodTimeService.getAllPeriods();
+        logger.info(
+          { count: periods.length },
+          "GraphQL: Periods fetched successfully",
+        );
+        return periods.map(formatPeriod);
+      } catch (error) {
+        logger.error({ error }, "GraphQL: Error fetching periods");
+        throw error;
+      }
+    },
+
+    periodById: async (_: any, { id }: { id: number }) => {
+      logger.info({ id }, "GraphQL: Fetching period by ID");
+      try {
+        const period = await periodTimeService.getPeriodById(id);
+        logger.info({ id }, "GraphQL: Period fetched successfully");
+        return formatPeriod(period);
+      } catch (error) {
+        logger.error({ id, error }, "GraphQL: Error fetching period");
+        throw error;
+      }
+    },
+
     // Menus
     menus: async () => {
       logger.info("GraphQL: Fetching all menus");
       try {
         const menus = await menuService.getAllMenus();
-        logger.info({ count: menus.length }, "GraphQL: All menus fetched successfully");
+        logger.info(
+          { count: menus.length },
+          "GraphQL: All menus fetched successfully",
+        );
         return menus.map(formatMenu);
       } catch (error) {
         logger.error({ error }, "GraphQL: Error fetching all menus");
@@ -72,29 +113,53 @@ export const resolvers = {
       }
     },
 
-    menusByDate: async (_: any, { date, menuPeriod }: { date: string; menuPeriod?: string }) => {
+    menusByDate: async (
+      _: any,
+      { date, menuPeriod }: { date: string; menuPeriod?: string },
+    ) => {
       logger.info({ date, menuPeriod }, "GraphQL: Fetching menus by date");
       try {
         const menus = await menuService.getMenusByDate(date, menuPeriod);
-        logger.info({ date, count: menus.length }, "GraphQL: Menus fetched successfully");
+        logger.info(
+          { date, count: menus.length },
+          "GraphQL: Menus fetched successfully",
+        );
         return menus.map(formatMenu);
       } catch (error) {
-        logger.error({ date, menuPeriod, error }, "GraphQL: Error fetching menus");
+        logger.error(
+          { date, menuPeriod, error },
+          "GraphQL: Error fetching menus",
+        );
         throw error;
       }
     },
 
-    menusByDateAndCategory: async (_: any, { date, menuPeriod, dishCategory }: { date: string; menuPeriod: string; dishCategory: string }) => {
-      logger.info({ date, menuPeriod, dishCategory }, "GraphQL: Fetching menu by date, period and category");
+    menusByDateAndCategory: async (
+      _: any,
+      {
+        date,
+        menuPeriod,
+        dishCategory,
+      }: { date: string; menuPeriod: string; dishCategory: string },
+    ) => {
+      logger.info(
+        { date, menuPeriod, dishCategory },
+        "GraphQL: Fetching menu by date, period and category",
+      );
       try {
         const menus = await menuService.getMenusByDate(date, menuPeriod);
-        const menu = menus.find(m => m.dish_category === dishCategory);
+        const menu = menus.find((m) => m.dish_category === dishCategory);
         if (!menu) {
-          throw new Error(`No menu found for ${dishCategory} on ${date} during ${menuPeriod}`);
+          throw new Error(
+            `No menu found for ${dishCategory} on ${date} during ${menuPeriod}`,
+          );
         }
         return formatMenu(menu);
       } catch (error) {
-        logger.error({ date, menuPeriod, dishCategory, error }, "GraphQL: Error fetching menu");
+        logger.error(
+          { date, menuPeriod, dishCategory, error },
+          "GraphQL: Error fetching menu",
+        );
         throw error;
       }
     },
@@ -102,12 +167,18 @@ export const resolvers = {
     todayMenu: async (_: any, { menuPeriod }: { menuPeriod?: string }) => {
       logger.info({ menuPeriod }, "GraphQL: Fetching today's menu");
       try {
-        const today = new Date().toISOString().split('T')[0];
+        const today = new Date().toISOString().split("T")[0];
         const menus = await menuService.getMenusByDate(today, menuPeriod);
-        logger.info({ menuPeriod, count: menus.length }, "GraphQL: Today's menu fetched");
+        logger.info(
+          { menuPeriod, count: menus.length },
+          "GraphQL: Today's menu fetched",
+        );
         return menus.map(formatMenu);
       } catch (error) {
-        logger.error({ menuPeriod, error }, "GraphQL: Error fetching today's menu");
+        logger.error(
+          { menuPeriod, error },
+          "GraphQL: Error fetching today's menu",
+        );
         throw error;
       }
     },
@@ -147,6 +218,43 @@ export const resolvers = {
         return true;
       } catch (error) {
         logger.error({ id, error }, "GraphQL: Error deleting dish");
+        throw error;
+      }
+    },
+
+    // Periods
+    createPeriod: async (_: any, { input }: { input: any }) => {
+      logger.info({ input }, "GraphQL: Creating period");
+      try {
+        const period = await periodTimeService.createPeriod(input);
+        logger.info({ id: period.id }, "GraphQL: Period created successfully");
+        return formatPeriod(period);
+      } catch (error) {
+        logger.error({ input, error }, "GraphQL: Error creating period");
+        throw error;
+      }
+    },
+
+    updatePeriod: async (_: any, { id, input }: { id: number; input: any }) => {
+      logger.info({ id, input }, "GraphQL: Updating period");
+      try {
+        const period = await periodTimeService.updatePeriod(id, input);
+        logger.info({ id }, "GraphQL: Period updated successfully");
+        return formatPeriod(period);
+      } catch (error) {
+        logger.error({ id, input, error }, "GraphQL: Error updating period");
+        throw error;
+      }
+    },
+
+    deletePeriod: async (_: any, { id }: { id: number }) => {
+      logger.info({ id }, "GraphQL: Deleting period");
+      try {
+        await periodTimeService.deletePeriod(id);
+        logger.info({ id }, "GraphQL: Period deleted successfully");
+        return true;
+      } catch (error) {
+        logger.error({ id, error }, "GraphQL: Error deleting period");
         throw error;
       }
     },

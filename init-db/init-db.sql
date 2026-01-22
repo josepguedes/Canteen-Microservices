@@ -59,20 +59,37 @@ CREATE TABLE IF NOT EXISTS dishes (
     created_at TIMESTAMP DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS period_time (
+    id SERIAL PRIMARY KEY,
+    menu_period VARCHAR(50) NOT NULL UNIQUE CHECK (menu_period IN ('lunch', 'dinner')),
+    start_time TIME NOT NULL,
+    end_time TIME NOT NULL,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
 CREATE TABLE IF NOT EXISTS menus (
     id_menu SERIAL PRIMARY KEY,
     dish_id INTEGER NOT NULL,
+    period_id INTEGER NOT NULL,
     dish_category VARCHAR(100) NOT NULL CHECK (dish_category IN ('meat', 'fish', 'diet', 'vegetarian', 'optional')),
     menu_date DATE NOT NULL,
-    menu_period VARCHAR(50) NOT NULL CHECK (menu_period IN ('lunch', 'dinner')),
     created_at TIMESTAMP DEFAULT NOW(),
     CONSTRAINT fk_dish
         FOREIGN KEY (dish_id)
         REFERENCES dishes(id_dish)
         ON DELETE CASCADE,
+    CONSTRAINT fk_period
+        FOREIGN KEY (period_id)
+        REFERENCES period_time(id)
+        ON DELETE RESTRICT,
     CONSTRAINT unique_category_per_menu_period
-        UNIQUE (menu_date, menu_period, dish_category)
+        UNIQUE (menu_date, period_id, dish_category)
 );
+
+-- Insert period times
+INSERT INTO period_time (menu_period, start_time, end_time) VALUES
+('lunch', '12:00:00', '14:30:00'),
+('dinner', '19:00:00', '21:30:00');
 
 -- Insert sample dishes
 INSERT INTO dishes (dish_name, dish_description) VALUES
@@ -82,13 +99,13 @@ INSERT INTO dishes (dish_name, dish_description) VALUES
 ('Lasanha Vegetariana', 'Lasanha com legumes'),
 ('Pizza Margherita', 'Pizza clássica italiana');
 
--- Insert sample menu for lunch on 2026-01-20
-INSERT INTO menus (dish_id, dish_category, menu_date, menu_period) VALUES
-(1, 'meat', '2026-01-20', 'lunch'),
-(2, 'fish', '2026-01-20', 'lunch'),
-(3, 'diet', '2026-01-20', 'lunch'),
-(4, 'vegetarian', '2026-01-20', 'lunch'),
-(5, 'optional', '2026-01-20', 'lunch');
+-- Insert sample menu for lunch on 2026-01-22
+INSERT INTO menus (dish_id, period_id, dish_category, menu_date) VALUES
+(1, 1, 'meat', '2026-01-22'),      -- 1 = lunch
+(2, 1, 'fish', '2026-01-22'),
+(3, 1, 'diet', '2026-01-22'),
+(4, 1, 'vegetarian', '2026-01-22'),
+(5, 1, 'optional', '2026-01-22');
 
 
 -- ============================================
