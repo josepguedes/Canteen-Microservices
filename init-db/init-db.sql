@@ -118,7 +118,7 @@ CREATE TABLE IF NOT EXISTS bookings (
     booking_id SERIAL PRIMARY KEY,
     user_id UUID NOT NULL,
     menu_id INTEGER NOT NULL,
-    status VARCHAR(50) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'confirmed', 'cancelled', 'completed')),
+    status VARCHAR(50) NOT NULL DEFAULT 'pending' CHECK (status IN ('confirmed', 'cancelled', 'completed')),
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW(),
     CONSTRAINT unique_user_menu UNIQUE (user_id, menu_id)

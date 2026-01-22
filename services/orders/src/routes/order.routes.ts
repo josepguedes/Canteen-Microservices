@@ -28,4 +28,7 @@ router.patch("/:id/status", orderController.updateOrderStatus);
 // Delete order
 router.delete("/:id", orderController.deleteOrder);
 
+// Cancel order
+router.post("/:id/cancel", orderController.cancelOrder);
+
 export default router;

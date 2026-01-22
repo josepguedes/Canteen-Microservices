@@ -478,3 +478,25 @@ export const deleteOrder = catchAsync(async (req: Request, res: Response) => {
     message: "Order deleted successfully",
   });
 });
+
+
+// function that help cancel orther 2h before the meal time 
+export const cancelOrder = catchAsync(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const orderId = Number(id);
+  logger.info(`Checking if order ${orderId} needs to be cancelled`);
+  const order = await orderService.getOrderById(orderId);
+  const currentTime = new Date();
+  const mealTime = new Date(order.meal_time);
+  const timeDifference = mealTime.getTime() - currentTime.getTime();
+  const hoursDifference = timeDifference / (1000 * 60 * 60);
+  if (hoursDifference < 2 && order.status !== 'cancelled') {
+    logger.info(`Cancelling order ${orderId} as it is within 2 hours of meal time`);
+    await orderService.updateOrderStatus(orderId, 'cancelled');
+    logger.info(`Order ${orderId} cancelled successfully`);
+  }
+  res.status(HttpStatusCode.OK).json({
+    status: "success",
+    message: `Order ${orderId} cancellation processed`,
+  });
+});

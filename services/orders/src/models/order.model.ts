@@ -12,7 +12,7 @@ const pool = new Pool({
 });
 
 export type MealType = 'lunch' | 'dinner';
-export type BookingStatus = 'pending' | 'confirmed' | 'cancelled' | 'completed';
+export type BookingStatus = 'pending' | 'cancelled' | 'completed';
 
 export interface IBooking {
     booking_id?: number;
@@ -103,6 +103,6 @@ export const remove = async (id: number): Promise<void> => {
 };
 
 export const validateStatus = (status: BookingStatus): boolean => {
-  const validStatuses: BookingStatus[] = ["pending", "confirmed", "cancelled", "completed"];
+  const validStatuses: BookingStatus[] = ["pending", "cancelled", "completed"];
   return validStatuses.includes(status);
 };

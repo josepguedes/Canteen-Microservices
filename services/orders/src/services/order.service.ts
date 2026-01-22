@@ -89,3 +89,9 @@ export const deleteOrder = async (id: number): Promise<void> => {
   await OrderModel.remove(id);
   logger.info(`Order ${id} deleted successfully`);
 };
+
+// verify if is it possible to cancel an order
+export const canCancelOrder = async (id: number): Promise<boolean> => {
+  const order = await getOrderById(id);
+  return order.status === "pending";
+};
