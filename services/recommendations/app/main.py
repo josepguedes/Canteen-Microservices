@@ -1,27 +1,33 @@
 from datetime import date
 from fastapi import FastAPI, Depends, Query, HTTPException
 
-from app.auth import get_current_user
+from app.auth import get_current_user, get_token
 from app.db import get_connection
-from app.clients.user_service import get_liked_dishes
-from app.clients.menu_service import get_today_menu
+from app.clients.users_service import get_liked_dishes
+from app.clients.menu_service import get_menu_by_id
 from app.rules.recommend import recommend_dish
-from app.logging_config import logger
+from app.logging import logger
 
 app = FastAPI(title="Dish Recommendation Service")
 
 
-@app.get("/recommendations")
+@app.get("/")
 async def get_recommendations(
-    meal_type: str = Query(..., regex="^(lunch|dinner)$"),
+    menu_id: int = Query(..., description="Menu ID to get recommendation for"),
     user_id: int = Depends(get_current_user),
+    token: str = Depends(get_token)
 ):
-    logger.info("Start recommendation", extra={"user_id": user_id})
+    logger.info("Start recommendation", extra={"user_id": user_id, "menu_id": menu_id})
 
     liked = await get_liked_dishes(user_id)
-    menu = await get_today_menu(meal_type)
+    menu = await get_menu_by_id(menu_id, token)
 
-    available = menu["dishes"]
+    # For a single menu item, create a list with just that dish
+    available = [{
+        "id": menu["dish_id"],
+        "dish_category": menu["dish_category"],
+        "dish_name": menu["dish_name"],
+    }]
     dish_id = recommend_dish(liked, available)
 
     if not dish_id:
@@ -32,11 +38,10 @@ async def get_recommendations(
         with conn.cursor() as cur:
             cur.execute(
                 """
-                INSERT INTO recommendations (user_id, menu_id, dish_id, date)
-                VALUES (%s, %s, %s, %s)
-                ON CONFLICT (user_id, date) DO NOTHING
+                INSERT INTO recommendations (user_id, menu_id, dish_id )
+                VALUES (%s, %s, %s)
                 """,
-                (user_id, menu["id"], dish_id, date.today()),
+                (user_id, menu["id"], dish_id),
             )
         conn.commit()
     finally:
@@ -55,5 +60,6 @@ async def get_recommendations(
         "user_id": user_id,
         "menu_id": menu["id"],
         "dish_id": dish_id,
+        "menu": menu,
         "date": date.today(),
     }

@@ -9,4 +9,4 @@ RUN pip install --no-cache-dir --upgrade -r /code/requirements.txt
 
 COPY ./app /code/app
 
-CMD ["fastapi", "run", "app/main.py", "--port", "5003", "--proxy-headers"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "5003", "--proxy-headers"]
