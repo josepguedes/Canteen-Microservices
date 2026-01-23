@@ -17,6 +17,23 @@ interface UpdatePeriodTimeInput {
 }
 
 class PeriodTimeService {
+  // Helper function to validate time order
+  private validateTimeOrder(start_time: string, end_time: string): void {
+    // Convert time strings to comparable format (HH:MM:SS)
+    const startParts = start_time.split(':');
+    const endParts = end_time.split(':');
+    
+    const startMinutes = parseInt(startParts[0]) * 60 + parseInt(startParts[1]);
+    const endMinutes = parseInt(endParts[0]) * 60 + parseInt(endParts[1]);
+    
+    if (startMinutes >= endMinutes) {
+      throw new AppError(
+        "Start time must be before end time",
+        HttpStatusCode.BAD_REQUEST
+      );
+    }
+  }
+
   async getAllPeriods(): Promise<PeriodTime[]> {
     logger.info("Fetching all periods");
     const result = await pool.query(
@@ -46,6 +63,9 @@ class PeriodTimeService {
     logger.info({ input }, "Creating new period");
     const { menu_period, start_time, end_time } = input;
 
+    // Validate that start_time is before end_time
+    this.validateTimeOrder(start_time, end_time);
+
     try {
       const result = await pool.query(
         `INSERT INTO period_time (menu_period, start_time, end_time, created_at)
@@ -69,6 +89,15 @@ class PeriodTimeService {
 
   async updatePeriod(id: number, input: UpdatePeriodTimeInput): Promise<PeriodTime> {
     logger.info({ id, input }, "Updating period");
+
+    // First, get the current period to merge with updates
+    const currentPeriod = await this.getPeriodById(id);
+
+    const updatedStartTime = input.start_time ?? currentPeriod.start_time;
+    const updatedEndTime = input.end_time ?? currentPeriod.end_time;
+
+    // Validate time order with merged values
+    this.validateTimeOrder(updatedStartTime, updatedEndTime);
 
     const fields: string[] = [];
     const values: any[] = [];

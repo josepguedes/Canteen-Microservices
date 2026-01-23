@@ -61,7 +61,7 @@ CREATE TABLE IF NOT EXISTS dishes (
 
 CREATE TABLE IF NOT EXISTS period_time (
     id SERIAL PRIMARY KEY,
-    menu_period VARCHAR(50) NOT NULL UNIQUE CHECK (menu_period IN ('lunch', 'dinner')),
+    menu_period VARCHAR(50) NOT NULL CHECK (menu_period IN ('lunch', 'dinner')),
     start_time TIME NOT NULL,
     end_time TIME NOT NULL,
     created_at TIMESTAMP DEFAULT NOW()
