@@ -1,7 +1,6 @@
 import httpx
 from fastapi import HTTPException
-from app.config import USER_SERVICE_URL
-
+USER_SERVICE_URL = "http://users-service:5000"
 
 async def get_liked_dishes(user_id: int) -> list[int]:
     async with httpx.AsyncClient(timeout=3) as client:

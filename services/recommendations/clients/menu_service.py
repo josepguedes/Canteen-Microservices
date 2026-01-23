@@ -1,7 +1,6 @@
 import httpx
 from fastapi import HTTPException
-from app.config import MENU_SERVICE_URL
-
+MENU_SERVICE_URL = "http://menu-service:5002/graphql"
 QUERY = """
 query Menu($mealType: String!) {
   todayMenu(mealType: $mealType) {
