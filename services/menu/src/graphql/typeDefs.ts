@@ -84,9 +84,9 @@ export const typeDefs = `#graphql
     periodById(id: Int!): PeriodTime
 
     # Menu queries
-    menus: [MenuWithDish!]!
+    allMenus: [MenuWithDish!]!
+    menuById(id: Int!): MenuWithDish
     menusByDate(date: String!, menuPeriod: String): [MenuWithDish!]!
-    menusByDateAndCategory(date: String!, menuPeriod: String!, dishCategory: String!): MenuWithDish
     todayMenu(menuPeriod: String): [MenuWithDish!]!
   }
 
