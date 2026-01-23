@@ -91,7 +91,11 @@ export const resolvers = {
         const period = await periodTimeService.getPeriodById(id);
         logger.info({ id }, "GraphQL: Period fetched successfully");
         return formatPeriod(period);
-      } catch (error) {
+      } catch (error: any) {
+        if (error.statusCode === 404) {
+          logger.warn({ id }, "GraphQL: Period not found, returning null");
+          return null;
+        }
         logger.error({ id, error }, "GraphQL: Error fetching period");
         throw error;
       }
