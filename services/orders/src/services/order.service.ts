@@ -6,7 +6,7 @@ import { getMenuById } from "./menu.service";
 import logger from "../utils/logger";
 
 // Get order by ID
-export const getOrderById = async (id: number): Promise<any> => {
+export const getOrderById = async (id: number, token?: string): Promise<any> => {
   const order = await OrderModel.findById(id);
 
   if (!order) {
@@ -19,7 +19,7 @@ export const getOrderById = async (id: number): Promise<any> => {
 
   // Fetch menu details for this order
   try {
-    const menu_details = await getMenuById(order.menu_id);
+    const menu_details = await getMenuById(order.menu_id, token);
     return { ...order, menu_details };
   } catch (error) {
     logger.warn(`Failed to fetch menu details for menu_id ${order.menu_id}`);
@@ -28,14 +28,14 @@ export const getOrderById = async (id: number): Promise<any> => {
 };
 
 // Get all orders
-export const getAllOrders = async (): Promise<any[]> => {
+export const getAllOrders = async (token?: string): Promise<any[]> => {
   const orders = await OrderModel.findAll();
   
   // Fetch menu details for each order individually
   const ordersWithMenuDetails = await Promise.all(
     orders.map(async (order) => {
       try {
-        const menu_details = await getMenuById(order.menu_id);
+        const menu_details = await getMenuById(order.menu_id, token);
         return { ...order, menu_details };
       } catch (error) {
         logger.warn(`Failed to fetch menu details for menu_id ${order.menu_id}`);
@@ -48,14 +48,14 @@ export const getAllOrders = async (): Promise<any[]> => {
 };
 
 // Get orders by user and extract is id from token
-export const getOrdersByUserId = async (userId: number | string): Promise<any[]> => {
+export const getOrdersByUserId = async (userId: number | string, token?: string): Promise<any[]> => {
   const orders = await OrderModel.findByUserId(userId);
   
   // Fetch menu details for each order individually
   const ordersWithMenuDetails = await Promise.all(
     orders.map(async (order) => {
       try {
-        const menu_details = await getMenuById(order.menu_id);
+        const menu_details = await getMenuById(order.menu_id, token);
         return { ...order, menu_details };
       } catch (error) {
         logger.warn(`Failed to fetch menu details for menu_id ${order.menu_id}`);
@@ -68,7 +68,7 @@ export const getOrdersByUserId = async (userId: number | string): Promise<any[]>
 };
 
 // Create a new order
-export const createOrder = async (orderData: IBooking): Promise<IBooking> => {
+export const createOrder = async (orderData: IBooking, token?: string): Promise<IBooking> => {
   const { user_id, menu_id } = orderData;
 
   // Validate required fields
@@ -83,7 +83,7 @@ export const createOrder = async (orderData: IBooking): Promise<IBooking> => {
   // Fetch menu details to check the meal time
   let menuDetails;
   try {
-    menuDetails = await getMenuById(menu_id);
+    menuDetails = await getMenuById(menu_id, token);
   } catch (error) {
     logger.error(`Failed to fetch menu details for menu_id ${menu_id}`);
     throw new AppError(
@@ -116,10 +116,11 @@ export const createOrder = async (orderData: IBooking): Promise<IBooking> => {
 // Update an existing order
 export const updateOrder = async (
   id: number,
-  orderData: Partial<IBooking>
+  orderData: Partial<IBooking>,
+  token?: string
 ): Promise<IBooking> => {
   
-  const order = await getOrderById(id);
+  const order = await getOrderById(id, token);
 
   // If status is being changed to 'cancelled', check the 2-hour rule
   if (orderData.status === 'cancelled') {
@@ -183,9 +184,9 @@ export const updateOrderStatus = async (
 };
 
 // Delete an order
-export const deleteOrder = async (id: number): Promise<void> => {
+export const deleteOrder = async (id: number, token?: string): Promise<void> => {
   
-  await getOrderById(id);
+  await getOrderById(id, token);
 
   logger.info(`Deleting order ${id}`);
   await OrderModel.remove(id);

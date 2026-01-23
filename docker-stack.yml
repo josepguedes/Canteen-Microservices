@@ -1,0 +1,227 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: user_db_owner
+      POSTGRES_PASSWORD: vanveen321
+    ports:
+      - target: 5432
+        published: 5433
+        mode: host
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    configs:
+      - source: init_db_sql
+        target: /docker-entrypoint-initdb.d/init-db.sql
+    networks:
+      - canteen-network
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user_db_owner"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  users-service:
+    image: canteen-users-service:latest
+    environment:
+      - NODE_ENV=production
+      - PORT=5000
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=user_db_owner
+      - DB_PASSWORD=vanveen321
+      - DB_NAME=users_canteen
+      - JWT_SECRET=${JWT_SECRET:-your-secret-key-change-in-production}
+    networks:
+      - canteen-network
+    deploy:
+      replicas: 3
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
+        failure_action: rollback
+      rollback_config:
+        parallelism: 1
+        delay: 5s
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+  menu-service:
+    image: canteen-menu-service:latest
+    environment:
+      - NODE_ENV=production
+      - PORT=5002
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=user_db_owner
+      - DB_PASSWORD=vanveen321
+      - DB_NAME=menu_db
+      - JWT_SECRET=${JWT_SECRET:-your-secret-key-change-in-production}
+    networks:
+      - canteen-network
+    deploy:
+      replicas: 3
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
+        failure_action: rollback
+      rollback_config:
+        parallelism: 1
+        delay: 5s
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+  orders-service:
+    image: canteen-orders-service:latest
+    environment:
+      - NODE_ENV=production
+      - PORT=5001
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=user_db_owner
+      - DB_PASSWORD=vanveen321
+      - DB_NAME=bookingdb
+      - JWT_SECRET=${JWT_SECRET:-your-secret-key-change-in-production}
+      - MENU_SERVICE_URL=http://menu-service:5002
+    networks:
+      - canteen-network
+    deploy:
+      replicas: 3
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
+        failure_action: rollback
+      rollback_config:
+        parallelism: 1
+        delay: 5s
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+  recommendations-service:
+    image: canteen-recommendations-service:latest
+    environment:
+      - PYTHON_ENV=production
+      - PORT=5003
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=user_db_owner
+      - DB_PASSWORD=vanveen321
+      - DB_NAME=recommendations_canteen
+      - JWT_SECRET=${JWT_SECRET:-your-secret-key-change-in-production}
+      - MENU_SERVICE_URL=http://menu-service:5002/graphql
+      - USER_SERVICE_URL=http://users-service:5000
+    networks:
+      - canteen-network
+    deploy:
+      replicas: 3
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
+        failure_action: rollback
+      rollback_config:
+        parallelism: 1
+        delay: 5s
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+  api-gateway:
+    image: canteen-api-gateway:latest
+    ports:
+      - target: 80
+        published: 80
+        mode: ingress
+    networks:
+      - canteen-network
+    deploy:
+      replicas: 2
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
+        failure_action: rollback
+      rollback_config:
+        parallelism: 1
+        delay: 5s
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+
+volumes:
+  postgres_data:
+    driver: local
+
+configs:
+  init_db_sql:
+    file: ./init-db/init-db.sql
+
+networks:
+  canteen-network:
+    driver: overlay
+    attachable: true
