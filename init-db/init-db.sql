@@ -31,12 +31,10 @@ CREATE INDEX IF NOT EXISTS idx_user_liked_dishes_user ON user_liked_dishes (user
 CREATE INDEX IF NOT EXISTS idx_user_liked_dishes_dish ON user_liked_dishes (dish_id);
 
 -- Insert sample users
--- Note: Password is 'password123' hashed with argon2
--- Use these credentials to login: test1@example.com / password123
-INSERT INTO users (email, name, password) VALUES
-('test1@example.com', 'João Silva', '$argon2id$v=19$m=65536,t=3,p=4$c29tZXNhbHRoZXJl$OAJXKUHJHJHKJHKJHKJHKJHKJ'),
-('test2@example.com', 'Maria Santos', '$argon2id$v=19$m=65536,t=3,p=4$c29tZXNhbHRoZXJl$OAJXKUHJHJHKJHKJHKJHKJHKJ'),
-('admin@canteen.com', 'Admin User', '$argon2id$v=19$m=65536,t=3,p=4$c29tZXNhbHRoZXJl$OAJXKUHJHJHKJHKJHKJHKJHKJ');
+INSERT INTO users (email, role, name, password) VALUES
+('test1@example.com', 'user', 'João Silva', '$argon2id$v=19$m=65536,t=3,p=4$c29tZXNhbHRoZXJl$OAJXKUHJHJHKJHKJHKJHKJHKJ'),
+('test2@example.com', 'user', 'Maria Santos', '$argon2id$v=19$m=65536,t=3,p=4$c29tZXNhbHRoZXJl$OAJXKUHJHJHKJHKJHKJHKJHKJ'),
+('admin@canteen.com', 'admin', 'admin', '$argon2id$v=19$m=65536,t=3,p=4$c29tZXNhbHRoZXJl$OAJXKUHJHJHKJHKJHKJHKJHKJ');
 
 -- Insert sample liked dishes (using dish IDs as text since they reference menu service)
 INSERT INTO user_liked_dishes (user_id, dish_id)
