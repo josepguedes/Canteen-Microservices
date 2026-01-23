@@ -12,13 +12,13 @@ const pool = new Pool({
 });
 
 export type MealType = 'lunch' | 'dinner';
-export type BookingStatus = 'pending' | 'cancelled' | 'completed';
+export type BookingStatus = 'confirmed' | 'cancelled' | 'completed';
 
 export interface IBooking {
     booking_id?: number;
     user_id: number | string;
     menu_id: number;
-    status: BookingStatus;
+    status?: BookingStatus;
     created_at?: Date;
     updated_at?: Date;
 }
@@ -58,7 +58,7 @@ export const create = async (orderData: IBooking): Promise<IBooking> => {
     `INSERT INTO bookings (user_id, menu_id, status, created_at, updated_at) 
      VALUES ($1, $2, $3, NOW(), NOW()) 
      RETURNING *`,
-    [user_id, menu_id, status || "pending"]
+    [user_id, menu_id, status || "confirmed"]
   );
 
   return result.rows[0];
@@ -100,10 +100,12 @@ export const updateStatus = async (
 };
 
 export const remove = async (id: number): Promise<void> => {
-  await pool.query("DELETE FROM bookings WHERE booking_id = $1", [id]);
+  await pool.query(
+    "DELETE FROM bookings WHERE booking_id = $1",
+    [id]
+  );
 };
 
-export const validateStatus = (status: BookingStatus): boolean => {
-  const validStatuses: BookingStatus[] = ["pending", "cancelled", "completed"];
-  return validStatuses.includes(status);
+export const validateStatus = (status: string): status is BookingStatus => {
+  return ['confirmed', 'cancelled', 'completed'].includes(status);
 };
