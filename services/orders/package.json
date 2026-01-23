@@ -2,7 +2,9 @@
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
     "build": "tsc",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "swagger": "ts-node src/swagger.ts",
+    "swagger:dev": "npm run swagger && npm run dev"
   },
   "dependencies": {
     "argon2": "^0.44.0",
@@ -22,6 +24,8 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^24.10.1",
     "@types/pg": "^8.15.6",
+    "@types/swagger-ui-express": "^4.1.8",
+    "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.9.3"
   }
