@@ -90,6 +90,15 @@ class MenuService {
 
     const { dish_id, dish_category, menu_date, period_id } = input;
 
+    // Validate date format (YYYY-MM-DD)
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateRegex.test(menu_date)) {
+      throw new AppError(
+        "Invalid date format. Use YYYY-MM-DD",
+        HttpStatusCode.BAD_REQUEST,
+      );
+    }
+
     // Validate that the dish exists
     const dishResult = await pool.query(
       "SELECT * FROM dishes WHERE id_dish = $1",
@@ -119,8 +128,8 @@ class MenuService {
     try {
       const result = await pool.query(
         `INSERT INTO menus (dish_id, period_id, dish_category, menu_date, created_at)
-         VALUES ($1, $2, $3, $4, NOW())
-         RETURNING *`,
+       VALUES ($1, $2, $3, $4, NOW())
+       RETURNING *`,
         [dish_id, period_id, dish_category, menu_date],
       );
 
