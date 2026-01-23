@@ -10,6 +10,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     email TEXT NOT NULL UNIQUE,
+    role TEXT NOT NULL DEFAULT 'user' CHECK (role IN ('user', 'admin')),
     name TEXT NOT NULL,
     password TEXT NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -30,12 +31,10 @@ CREATE INDEX IF NOT EXISTS idx_user_liked_dishes_user ON user_liked_dishes (user
 CREATE INDEX IF NOT EXISTS idx_user_liked_dishes_dish ON user_liked_dishes (dish_id);
 
 -- Insert sample users
--- Note: Password is 'password123' hashed with argon2
--- Use these credentials to login: test1@example.com / password123
-INSERT INTO users (email, name, password) VALUES
-('test1@example.com', 'João Silva', '$argon2id$v=19$m=65536,t=3,p=4$c29tZXNhbHRoZXJl$OAJXKUHJHJHKJHKJHKJHKJHKJ'),
-('test2@example.com', 'Maria Santos', '$argon2id$v=19$m=65536,t=3,p=4$c29tZXNhbHRoZXJl$OAJXKUHJHJHKJHKJHKJHKJHKJ'),
-('admin@canteen.com', 'Admin User', '$argon2id$v=19$m=65536,t=3,p=4$c29tZXNhbHRoZXJl$OAJXKUHJHJHKJHKJHKJHKJHKJ');
+INSERT INTO users (email, role, name, password) VALUES
+('test1@example.com', 'user', 'João Silva', '$argon2id$v=19$m=65536,t=3,p=4$c29tZXNhbHRoZXJl$OAJXKUHJHJHKJHKJHKJHKJHKJ'),
+('test2@example.com', 'user', 'Maria Santos', '$argon2id$v=19$m=65536,t=3,p=4$c29tZXNhbHRoZXJl$OAJXKUHJHJHKJHKJHKJHKJHKJ'),
+('admin@canteen.com', 'admin', 'admin', '$argon2id$v=19$m=65536,t=3,p=4$c29tZXNhbHRoZXJl$OAJXKUHJHJHKJHKJHKJHKJHKJ');
 
 -- Insert sample liked dishes (using dish IDs as text since they reference menu service)
 INSERT INTO user_liked_dishes (user_id, dish_id)
@@ -128,3 +127,15 @@ CREATE TABLE IF NOT EXISTS bookings (
 INSERT INTO bookings (user_id, menu_id, status) VALUES
 ('11111111-1111-1111-1111-111111111111', 1, 'confirmed'),
 ('22222222-2222-2222-2222-222222222222', 2, 'confirmed');
+
+CREATE DATABASE recommendations_canteen;
+\c recommendations_canteen
+
+CREATE TABLE IF NOT EXISTS recommendations (
+    id SERIAL PRIMARY KEY,
+    user_id UUID NOT NULL,
+    menu_id INTEGER NOT NULL,
+    dish_id INTEGER NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (user_id, menu_id, dish_id)
+);

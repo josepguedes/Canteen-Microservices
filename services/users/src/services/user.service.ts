@@ -111,7 +111,7 @@ export const loginUser = async (email: string, password: string) => {
   logger.info(`[UserService] Password verified for user with email: ${email}`);
 
   const token = jwt.sign(
-    { id: user.id, email: user.email },
+    { id: user.id, email: user.email, role: user.role },
     process.env.JWT_SECRET as string,
     { expiresIn: "7d" },
   );
@@ -122,6 +122,7 @@ export const loginUser = async (email: string, password: string) => {
     id: user.id,
     email: user.email,
     name: user.name,
+    role: user.role,
     token,
   };
 };
