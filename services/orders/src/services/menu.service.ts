@@ -19,13 +19,13 @@ interface MenuDetails {
 const MENU_SERVICE_URL = process.env.MENU_SERVICE_URL || 'http://canteen-menu-service:5002';
 
 // Fetch menu details by ID
-export const getMenuById = async (menuId: number): Promise<MenuDetails> => {
+export const getMenuById = async (menuId: number, token?: string): Promise<MenuDetails> => {
   try {
     logger.info(`Fetching menu details for menu_id: ${menuId} from ${MENU_SERVICE_URL}`);
     
     const query = `
       query GetMenus {
-        menus {
+        allMenus {
           id_menu
           dish_id
           period_id
@@ -41,21 +41,22 @@ export const getMenuById = async (menuId: number): Promise<MenuDetails> => {
       }
     `;
 
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
     const response = await axios.post(MENU_SERVICE_URL, {
       query
-    });
-
+    }, { headers });
     if (response.data.errors) {
       logger.error(`GraphQL errors: ${JSON.stringify(response.data.errors)}`);
       throw new Error(response.data.errors[0].message);
     }
 
-    if (!response.data.data || !response.data.data.menus) {
+    if (!response.data.data || !response.data.data.allMenus) {
       logger.error(`No menu data returned from GraphQL`);
       throw new AppError('Invalid response from menu service', HttpStatusCode.INTERNAL_SERVER_ERROR);
     }
 
-    const menu = response.data.data.menus.find((m: MenuDetails) => m.id_menu === menuId);
+    const menu = response.data.data.allMenus.find((m: MenuDetails) => m.id_menu === menuId);
     
     if (!menu) {
       logger.warn(`Menu with ID ${menuId} not found in menu service`);

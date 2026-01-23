@@ -54,9 +54,10 @@ export const getOrder = catchAsync(async (req: Request, res: Response) => {
   logger.info('Fetching order by ID');
 
   const { id } = req.params;
+  const token = req.headers.authorization?.split(' ')[1];
   logger.info(`Fetching order with ID: ${id}`);
 
-  const order = await orderService.getOrderById(Number(id));
+  const order = await orderService.getOrderById(Number(id), token);
   logger.info(`Order ${id} retrieved successfully`);
 
   res.status(HttpStatusCode.OK).json({
@@ -118,7 +119,8 @@ export const getOrder = catchAsync(async (req: Request, res: Response) => {
 export const getAllOrders = catchAsync(async (req: Request, res: Response) => {
   logger.info('Fetching all orders');
 
-  const orders = await orderService.getAllOrders();
+  const token = req.headers.authorization?.split(' ')[1];
+  const orders = await orderService.getAllOrders(token);
   logger.info(`Retrieved ${orders.length} orders successfully`);
 
   res.status(HttpStatusCode.OK).json({
@@ -175,6 +177,7 @@ export const getAllOrders = catchAsync(async (req: Request, res: Response) => {
  */
 export const getOrdersByUser = catchAsync(async (req: Request, res: Response) => {
   const userId = (req as any).userId;
+  const token = req.headers.authorization?.split(' ')[1];
   
   logger.info(`[OrderController] GET /orders/user/:userId - Fetching orders for authenticated user ${userId}`);
 
@@ -186,7 +189,7 @@ export const getOrdersByUser = catchAsync(async (req: Request, res: Response) =>
     });
   }
 
-  const orders = await orderService.getOrdersByUserId(userId);
+  const orders = await orderService.getOrdersByUserId(userId, token);
   logger.info(`Retrieved ${orders.length} orders for user ${userId}`);
 
   res.status(HttpStatusCode.OK).json({
@@ -244,6 +247,7 @@ export const createOrder = catchAsync(async (req: Request, res: Response) => {
   
   // Extract user_id from JWT token (added by verifyJWT middleware)
   const userId = (req as any).userId;
+  const token = req.headers.authorization?.split(' ')[1];
   
   if (!userId) {
     logger.warn("[OrderController] User ID is missing from JWT");
@@ -261,7 +265,7 @@ export const createOrder = catchAsync(async (req: Request, res: Response) => {
   };
 
   logger.info(`Creating order for authenticated user ${userId}`);
-  const order = await orderService.createOrder(orderData);
+  const order = await orderService.createOrder(orderData, token);
   logger.info(`Order created successfully with ID: ${order.booking_id}`);
 
   res.status(HttpStatusCode.CREATED).json({
@@ -337,9 +341,10 @@ export const updateOrder = catchAsync(async (req: Request, res: Response) => {
   logger.info('Updating order');
 
   const { id } = req.params;
+  const token = req.headers.authorization?.split(' ')[1];
   logger.info(`Updating order with ID: ${id}`);
 
-  const order = await orderService.updateOrder(Number(id), req.body);
+  const order = await orderService.updateOrder(Number(id), req.body, token);
   logger.info(`Order ${id} updated successfully`);
 
   res.status(HttpStatusCode.OK).json({
@@ -392,9 +397,10 @@ export const deleteOrder = catchAsync(async (req: Request, res: Response) => {
   logger.info('Deleting order');
 
   const { id } = req.params;
+  const token = req.headers.authorization?.split(' ')[1];
   logger.info(`Deleting order with ID: ${id}`);
 
-  await orderService.deleteOrder(Number(id));
+  await orderService.deleteOrder(Number(id), token);
   logger.info(`Order ${id} deleted successfully`);
 
   res.status(HttpStatusCode.OK).json({
