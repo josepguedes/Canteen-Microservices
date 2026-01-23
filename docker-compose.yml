@@ -62,6 +62,20 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  recommendations-service:
+    build:
+      context: ./services/recommendations
+      dockerfile: Dockerfile
+    container_name: canteen-recommendations-service
+    env_file:
+      - ./services/recommendations/.env.docker
+    expose:
+      - "5003"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
   # Nginx API Gateway
   api-gateway:
     build:

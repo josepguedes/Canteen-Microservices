@@ -22,9 +22,9 @@ export const createUser = async (
   logger.info(`[UserModel] Creating user with email: ${email}`);
 
   const query =
-    "INSERT INTO users (email, name, password, created_at, updated_at) VALUES ($1, $2, $3, NOW(), NOW()) RETURNING id, email, name, created_at, updated_at";
+    "INSERT INTO users (email, role, name, password, created_at, updated_at) VALUES ($1, $2, $3, $4, NOW(), NOW()) RETURNING id, email, name, created_at, updated_at";
 
-  const result = await pool.query(query, [email, name, password]);
+  const result = await pool.query(query, [email, "user", name, password]);
 
   logger.info(
     `[UserModel] Successfully created user with ID: ${result.rows[0].id}`,
@@ -53,7 +53,8 @@ export const deleteUser = async (userId: string) => {
 export const getUserById = async (userId: string) => {
   logger.info(`[UserModel] Fetching user by ID: ${userId}`);
 
-  const query = "SELECT id, email, name, created_at, updated_at FROM users WHERE id = $1";
+  const query =
+    "SELECT id, email, name, created_at, updated_at FROM users WHERE id = $1";
 
   const result = await pool.query(query, [userId]);
 

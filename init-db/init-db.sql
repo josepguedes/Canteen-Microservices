@@ -10,6 +10,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     email TEXT NOT NULL UNIQUE,
+    role TEXT NOT NULL DEFAULT 'user' CHECK (role IN ('user', 'admin')),
     name TEXT NOT NULL,
     password TEXT NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -128,3 +129,15 @@ CREATE TABLE IF NOT EXISTS bookings (
 INSERT INTO bookings (user_id, menu_id, status) VALUES
 ('11111111-1111-1111-1111-111111111111', 1, 'confirmed'),
 ('22222222-2222-2222-2222-222222222222', 2, 'confirmed');
+
+CREATE DATABASE recommendations_canteen;
+\c recommendations_canteen
+
+CREATE TABLE IF NOT EXISTS recommendations (
+    id SERIAL PRIMARY KEY,
+    user_id UUID NOT NULL,
+    menu_id INTEGER NOT NULL,
+    dish_id INTEGER NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (user_id, menu_id, dish_id)
+);
