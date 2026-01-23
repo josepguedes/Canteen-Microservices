@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
+// Database connection pool for PostgreSQL
 const pool = new Pool({
   host: process.env.DB_HOST,
   port: Number(process.env.DB_PORT),
@@ -11,19 +12,24 @@ const pool = new Pool({
   password: process.env.DB_PASSWORD,
 });
 
+// Type for meal periods (lunch or dinner)
 export type MealType = 'lunch' | 'dinner';
-export type BookingStatus = 'pending' | 'cancelled' | 'completed';
 
+// Order/Booking status types
+export type BookingStatus = 'confirmed' | 'cancelled' | 'completed';
+
+// Order interface representing a booking in the database
 export interface IBooking {
-    booking_id?: number;
-    user_id: number;
-    menu_id: number;
-    status: BookingStatus;
-    created_at?: Date;
-    updated_at?: Date;
+    booking_id?: number;           
+    user_id: number | string;      
+    menu_id: number;               
+    status?: BookingStatus;        
+    created_at?: Date;             
+    updated_at?: Date;             
 }
 
-// Model methods with database logic
+
+// Get an order by its ID
 export const findById = async (id: number): Promise<IBooking | null> => {
   const result = await pool.query(
     "SELECT * FROM bookings WHERE booking_id = $1",
@@ -33,6 +39,7 @@ export const findById = async (id: number): Promise<IBooking | null> => {
   return result.rows.length > 0 ? result.rows[0] : null;
 };
 
+// Get all orders
 export const findAll = async (): Promise<IBooking[]> => {
   const result = await pool.query(
     "SELECT * FROM bookings ORDER BY created_at DESC"
@@ -41,7 +48,8 @@ export const findAll = async (): Promise<IBooking[]> => {
   return result.rows;
 };
 
-export const findByUserId = async (userId: number): Promise<IBooking[]> => {
+// Get orders by user ID
+export const findByUserId = async (userId: number | string): Promise<IBooking[]> => {
   const result = await pool.query(
     "SELECT * FROM bookings WHERE user_id = $1 ORDER BY created_at DESC",
     [userId]
@@ -50,6 +58,7 @@ export const findByUserId = async (userId: number): Promise<IBooking[]> => {
   return result.rows;
 };
 
+// Create a new order
 export const create = async (orderData: IBooking): Promise<IBooking> => {
   const { user_id, menu_id, status } = orderData;
 
@@ -57,12 +66,13 @@ export const create = async (orderData: IBooking): Promise<IBooking> => {
     `INSERT INTO bookings (user_id, menu_id, status, created_at, updated_at) 
      VALUES ($1, $2, $3, NOW(), NOW()) 
      RETURNING *`,
-    [user_id, menu_id, status || "pending"]
+    [user_id, menu_id, status || "confirmed"]
   );
 
   return result.rows[0];
 };
 
+// Update an existing order
 export const update = async (
   id: number,
   orderData: Partial<IBooking>
@@ -83,6 +93,7 @@ export const update = async (
   return result.rows[0];
 };
 
+// Update only the status of an order
 export const updateStatus = async (
   id: number,
   status: BookingStatus
@@ -98,11 +109,15 @@ export const updateStatus = async (
   return result.rows[0];
 };
 
+// Delete an order by ID
 export const remove = async (id: number): Promise<void> => {
-  await pool.query("DELETE FROM bookings WHERE booking_id = $1", [id]);
+  await pool.query(
+    "DELETE FROM bookings WHERE booking_id = $1",
+    [id]
+  );
 };
 
-export const validateStatus = (status: BookingStatus): boolean => {
-  const validStatuses: BookingStatus[] = ["pending", "cancelled", "completed"];
-  return validStatuses.includes(status);
+// Validate if a given status is valid
+export const validateStatus = (status: string): status is BookingStatus => {
+  return ['confirmed', 'cancelled', 'completed'].includes(status);
 };

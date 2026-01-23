@@ -118,8 +118,13 @@ CREATE TABLE IF NOT EXISTS bookings (
     booking_id SERIAL PRIMARY KEY,
     user_id UUID NOT NULL,
     menu_id INTEGER NOT NULL,
-    status VARCHAR(50) NOT NULL DEFAULT 'pending' CHECK (status IN ('confirmed', 'cancelled', 'completed')),
+    status VARCHAR(50) NOT NULL DEFAULT 'confirmed' CHECK (status IN ('confirmed', 'cancelled', 'completed')),
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW(),
     CONSTRAINT unique_user_menu UNIQUE (user_id, menu_id)
 );
+
+-- Insert sample bookings
+INSERT INTO bookings (user_id, menu_id, status) VALUES
+('11111111-1111-1111-1111-111111111111', 1, 'confirmed'),
+('22222222-2222-2222-2222-222222222222', 2, 'confirmed');
