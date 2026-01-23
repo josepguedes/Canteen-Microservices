@@ -8,21 +8,21 @@ const router = express.Router();
 router.use(verifyJWT); 
 
 // Get all orders
-router.get("/", orderController.getAllOrders);//
+router.get("/", orderController.getAllOrders);
 
-// Get orders for the authenticated user (moved before /:id to avoid conflicts)
-router.get("/my-orders", orderController.getOrdersByUser);//
+// Get orders for the authenticated user 
+router.get("/my-orders", orderController.getOrdersByUser);
 
 // Get order by ID
 router.get("/:id", orderController.getOrder);// ADD TO ADMIN
 
 // Create new order
-router.post("/", orderController.createOrder);//
+router.post("/", orderController.createOrder);
 
 // Update order
-router.put("/:id", orderController.updateOrder);//
+router.put("/:id", orderController.updateOrder);
 
 // Delete order
-router.delete("/:id", orderController.deleteOrder);//
+router.delete("/:id", orderController.deleteOrder);
 
 export default router;

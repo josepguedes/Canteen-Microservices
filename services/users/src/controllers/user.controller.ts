@@ -245,3 +245,25 @@ export const getLikedDishes = catchAsync(
     });
   },
 );
+
+export const getLikedDishesByUserId = catchAsync(
+  async (req: Request, res: Response) => {
+    const userId = req.params.id;
+
+    logger.info(
+      `[UserController] GET /:id/likes - Request to get liked dishes for user ${userId}`,
+    );
+
+    const likedDishes = await UserService.getLikedDishes(userId as string);
+
+    logger.info(
+      `[UserController] Successfully returning ${likedDishes.length} liked dishes for user ${userId}`,
+    );
+
+    res.status(HttpStatusCode.OK).json({
+      success: true,
+      count: likedDishes.length,
+      data: likedDishes,
+    });
+  },
+);

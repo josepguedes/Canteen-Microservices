@@ -6,8 +6,6 @@ const router = express.Router();
 
 router.get("/", verifyJWT, UserController.getAllUsers);
 
-router.get("/:id", verifyJWT, UserController.getUserById);
-
 router.post("/", UserController.createUser);
 
 router.post("/login", UserController.loginUser);
@@ -15,6 +13,10 @@ router.post("/login", UserController.loginUser);
 router.get("/likes", verifyJWT, UserController.getLikedDishes);
 
 router.post("/likes/:dishId", verifyJWT, UserController.addLikedDish);
+
+router.get("/:id", verifyJWT, UserController.getUserById);
+
+router.get("/:id/likes", UserController.getLikedDishesByUserId);
 
 router.put("/", verifyJWT, UserController.updateUser);
 

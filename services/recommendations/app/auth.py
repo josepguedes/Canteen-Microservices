@@ -15,9 +15,14 @@ def get_current_user(
             JWT_SECRET,
             algorithms=["HS256"],
         )
-        return payload["user_id"]
+        return payload["id"]
     except jwt.PyJWTError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired token",
         )
+
+def get_token(
+    creds: HTTPAuthorizationCredentials = Depends(security),
+) -> str:
+    return creds.credentials
