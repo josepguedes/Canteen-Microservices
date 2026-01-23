@@ -130,56 +130,38 @@ export const getAllOrders = catchAsync(async (req: Request, res: Response) => {
 
 /*
  #swagger.tags = ['Orders']
- #swagger.summary = 'Get orders by user ID'
- #swagger.description = 'Retrieve all orders for a specific user'
- #swagger.parameters['userId'] = {
-   in: 'path',
-   description: 'User ID',
-   required: true,
-   type: 'integer'
- }
+ #swagger.summary = 'Get orders for authenticated user'
+ #swagger.description = 'Retrieve all orders for the currently logged-in user. User ID is extracted from JWT token automatically.'
  #swagger.responses[200] = { 
-   description: 'User orders retrieved successfully', 
+   description: 'User orders retrieved successfully. Each order includes enriched menu details.', 
    schema: { 
      status: 'success',
      results: 2,
      data: [
        {
-         id: 1,
-         userId: 1,
-         items: [
-           {
-             menuItemId: 1,
-             quantity: 2,
-             price: 9.99
-           }
-         ],
-         totalAmount: 19.98,
-         status: 'pending',
-         createdAt: '2026-01-10T12:00:00Z'
-       },
-       {
-         id: 3,
-         userId: 1,
-         items: [
-           {
-             menuItemId: 3,
-             quantity: 1,
-             price: 12.50
-           }
-         ],
-         totalAmount: 12.50,
-         status: 'completed',
-         createdAt: '2026-01-10T14:00:00Z'
+         booking_id: 1,
+         user_id: 1,
+         menu_id: 1,
+         status: 'confirmed',
+         created_at: '2026-01-23T10:00:00Z',
+         updated_at: '2026-01-23T10:00:00Z',
+         menu_details: {
+           id_menu: 1,
+           dish_name: 'Grilled Chicken',
+           menu_date: '2026-01-23',
+           start_time: '12:00:00',
+           end_time: '14:00:00',
+           menu_period: 'lunch'
+         }
        }
      ]
    } 
  }
- #swagger.responses[404] = { 
-   description: 'User not found',
+ #swagger.responses[401] = { 
+   description: 'Unauthorized - Invalid or missing JWT token',
    schema: {
      status: 'error',
-     message: 'User not found'
+     message: 'Unauthorized'
    }
  }
  #swagger.responses[500] = { 
@@ -217,22 +199,14 @@ export const getOrdersByUser = catchAsync(async (req: Request, res: Response) =>
 /*
  #swagger.tags = ['Orders']
  #swagger.summary = 'Create new order'
- #swagger.description = 'Create a new order with items'
+ #swagger.description = 'Create a new order for a menu item. IMPORTANT: Orders must be placed at least 2 hours before the meal time. User ID is automatically extracted from JWT token.'
  #swagger.parameters['body'] = {
    in: 'body',
-   description: 'Order data',
+   description: 'Order data - only menu_id and optional status are required. User ID comes from JWT token.',
    required: true,
    schema: {
-     userId: 1,
-     items: [
-       {
-         menuItemId: 1,
-         quantity: 2,
-         price: 9.99
-       }
-     ],
-     totalAmount: 19.98,
-     status: 'pending'
+     menu_id: 1,
+     status: 'confirmed'
    }
  }
  #swagger.responses[201] = { 
@@ -240,26 +214,20 @@ export const getOrdersByUser = catchAsync(async (req: Request, res: Response) =>
    schema: { 
      status: 'success',
      data: {
-       id: 1,
-       userId: 1,
-       items: [
-         {
-           menuItemId: 1,
-           quantity: 2,
-           price: 9.99
-         }
-       ],
-       totalAmount: 19.98,
-       status: 'pending',
-       createdAt: '2026-01-10T12:00:00Z'
+       booking_id: 1,
+       user_id: 1,
+       menu_id: 1,
+       status: 'confirmed',
+       created_at: '2026-01-23T12:00:00Z',
+       updated_at: '2026-01-23T12:00:00Z'
      }
    } 
  }
  #swagger.responses[400] = { 
-   description: 'Invalid input data',
+   description: 'Invalid input data or order placed less than 2 hours before meal time',
    schema: {
      status: 'error',
-     message: 'Invalid input data'
+     message: 'Orders must be placed at least 2 hours before the meal time'
    }
  }
  #swagger.responses[500] = { 
@@ -274,7 +242,7 @@ export const getOrdersByUser = catchAsync(async (req: Request, res: Response) =>
 export const createOrder = catchAsync(async (req: Request, res: Response) => {
   logger.info('Creating new order');
   
-  // Extract user_id from JWT token
+  // Extract user_id from JWT token (added by verifyJWT middleware)
   const userId = (req as any).userId;
   
   if (!userId) {
@@ -286,6 +254,7 @@ export const createOrder = catchAsync(async (req: Request, res: Response) => {
   }
 
   // Merge user_id from token with request body
+  // This ensures users can only create orders for themselves
   const orderData = {
     ...req.body,
     user_id: userId
@@ -381,86 +350,8 @@ export const updateOrder = catchAsync(async (req: Request, res: Response) => {
 
 /*
  #swagger.tags = ['Orders']
- #swagger.summary = 'Update order status'
- #swagger.description = 'Update the status of an existing order'
- #swagger.parameters['id'] = {
-   in: 'path',
-   description: 'Order ID',
-   required: true,
-   type: 'integer'
- }
- #swagger.parameters['body'] = {
-   in: 'body',
-   description: 'New status',
-   required: true,
-   schema: {
-     status: 'completed'
-   }
- }
- #swagger.responses[200] = { 
-   description: 'Order status updated successfully', 
-   schema: { 
-     status: 'success',
-     data: {
-       id: 1,
-       userId: 1,
-       items: [
-         {
-           menuItemId: 1,
-           quantity: 2,
-           price: 9.99
-         }
-       ],
-       totalAmount: 19.98,
-       status: 'completed',
-       createdAt: '2026-01-10T12:00:00Z',
-       updatedAt: '2026-01-10T13:00:00Z'
-     }
-   } 
- }
- #swagger.responses[404] = { 
-   description: 'Order not found',
-   schema: {
-     status: 'error',
-     message: 'Order not found'
-   }
- }
- #swagger.responses[400] = { 
-   description: 'Invalid status',
-   schema: {
-     status: 'error',
-     message: 'Invalid status'
-   }
- }
- #swagger.responses[500] = { 
-   description: 'Error updating order status',
-   schema: {
-     status: 'error',
-     message: 'Error updating order status',
-     error: 'Internal server error'
-   }
- }
- */
-export const updateOrderStatus = catchAsync(async (req: Request, res: Response) => {
-  logger.info('Updating order status');
-
-  const { id } = req.params;
-  const { status } = req.body;
-  logger.info(`Updating status for order ${id} to: ${status}`);
-
-  const order = await orderService.updateOrderStatus(Number(id), status);
-  logger.info(`Order ${id} status updated successfully to: ${status}`);
-
-  res.status(HttpStatusCode.OK).json({
-    status: "success",
-    data: order,
-  });
-});
-
-/*
- #swagger.tags = ['Orders']
- #swagger.summary = 'Delete order'
- #swagger.description = 'Delete an existing order by ID'
+ #swagger.summary = 'Delete/Cancel order'
+ #swagger.description = 'Delete an existing order by ID. IMPORTANT: Orders can only be cancelled at least 2 hours before the meal time. This is a permanent deletion (hard delete).'
  #swagger.parameters['id'] = {
    in: 'path',
    description: 'Order ID',
@@ -468,11 +359,18 @@ export const updateOrderStatus = catchAsync(async (req: Request, res: Response) 
    type: 'integer'
  }
  #swagger.responses[200] = { 
-   description: 'Order deleted successfully', 
+   description: 'Order deleted/cancelled successfully', 
    schema: { 
      status: 'success',
      message: 'Order deleted successfully'
    } 
+ }
+ #swagger.responses[400] = { 
+   description: 'Cancellation attempted less than 2 hours before meal time',
+   schema: {
+     status: 'error',
+     message: 'Orders can only be cancelled at least 2 hours before the meal time'
+   }
  }
  #swagger.responses[404] = { 
    description: 'Order not found',
@@ -502,18 +400,5 @@ export const deleteOrder = catchAsync(async (req: Request, res: Response) => {
   res.status(HttpStatusCode.OK).json({
     status: "success",
     message: "Order deleted successfully",
-  });
-});
-
-// Cancel order
-export const cancelOrder = catchAsync(async (req: Request, res: Response) => {
-  logger.info('Cancelling order');
-  const { id } = req.params;
-  logger.info(`Cancelling order with ID: ${id}`);
-  const order = await orderService.cancelOrder(Number(id));
-  logger.info(`Order ${id} cancelled successfully`);
-  res.status(HttpStatusCode.OK).json({
-    status: "success",
-    data: order,
   });
 });

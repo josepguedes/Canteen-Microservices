@@ -80,6 +80,34 @@ export const createOrder = async (orderData: IBooking): Promise<IBooking> => {
     );
   }
 
+  // Fetch menu details to check the meal time
+  let menuDetails;
+  try {
+    menuDetails = await getMenuById(menu_id);
+  } catch (error) {
+    logger.error(`Failed to fetch menu details for menu_id ${menu_id}`);
+    throw new AppError(
+      "Invalid menu_id: menu not found",
+      HttpStatusCode.BAD_REQUEST
+    );
+  }
+
+  // Validate that order is being placed at least 2 hours before meal time
+  if (menuDetails.menu_date && menuDetails.start_time) {
+    const mealDateTime = new Date(`${menuDetails.menu_date}T${menuDetails.start_time}`);
+    const now = new Date();
+    const twoHoursInMs = 2 * 60 * 60 * 1000; // 2 hours in milliseconds
+    const timeUntilMeal = mealDateTime.getTime() - now.getTime();
+
+    if (timeUntilMeal < twoHoursInMs) {
+      logger.error(`Order attempt for menu ${menu_id} is less than 2 hours before meal time`);
+      throw new AppError(
+        "Orders must be placed at least 2 hours before the meal time",
+        HttpStatusCode.BAD_REQUEST
+      );
+    }
+  }
+
   logger.info(`Creating order for user ${user_id}, menu_id: ${menu_id}`);
 
   return await OrderModel.create(orderData);
@@ -90,8 +118,26 @@ export const updateOrder = async (
   id: number,
   orderData: Partial<IBooking>
 ): Promise<IBooking> => {
-  // First check if order exists
-  await getOrderById(id);
+  
+  const order = await getOrderById(id);
+
+  // If status is being changed to 'cancelled', check the 2-hour rule
+  if (orderData.status === 'cancelled') {
+    if (order.menu_details && order.menu_details.menu_date && order.menu_details.start_time) {
+      const mealDateTime = new Date(`${order.menu_details.menu_date}T${order.menu_details.start_time}`);
+      const now = new Date();
+      const twoHoursInMs = 2 * 60 * 60 * 1000; // 2 hours in milliseconds
+      const timeUntilMeal = mealDateTime.getTime() - now.getTime();
+
+      if (timeUntilMeal < twoHoursInMs) {
+        logger.error(`Cancellation attempt for order ${id} is less than 2 hours before meal time`);
+        throw new AppError(
+          "Orders can only be cancelled at least 2 hours before the meal time",
+          HttpStatusCode.BAD_REQUEST
+        );
+      }
+    }
+  }
 
   logger.info(`Updating order ${id}`);
   return await OrderModel.update(id, orderData);
@@ -102,8 +148,8 @@ export const updateOrderStatus = async (
   id: number,
   status: BookingStatus
 ): Promise<IBooking> => {
-  // First check if order exists
-  await getOrderById(id);
+  
+  const order = await getOrderById(id);
 
   // Validate status
   if (!OrderModel.validateStatus(status)) {
@@ -114,13 +160,31 @@ export const updateOrderStatus = async (
     );
   }
 
+  // Check if the order is being cancelled and verify the 2-hour rule
+  if (status === 'cancelled') {
+    if (order.menu_details && order.menu_details.menu_date && order.menu_details.start_time) {
+      const mealDateTime = new Date(`${order.menu_details.menu_date}T${order.menu_details.start_time}`);
+      const now = new Date();
+      const twoHoursInMs = 2 * 60 * 60 * 1000; // 2 hours in milliseconds
+      const timeUntilMeal = mealDateTime.getTime() - now.getTime();
+
+      if (timeUntilMeal < twoHoursInMs) {
+        logger.error(`Cancellation attempt for order ${id} is less than 2 hours before meal time`);
+        throw new AppError(
+          "Orders can only be cancelled at least 2 hours before the meal time",
+          HttpStatusCode.BAD_REQUEST
+        );
+      }
+    }
+  }
+
   logger.info(`Updating order ${id} status to ${status}`);
   return await OrderModel.updateStatus(id, status);
 };
 
 // Delete an order
 export const deleteOrder = async (id: number): Promise<void> => {
-  // First check if order exists
+  
   await getOrderById(id);
 
   logger.info(`Deleting order ${id}`);
@@ -128,62 +192,11 @@ export const deleteOrder = async (id: number): Promise<void> => {
   logger.info(`Order ${id} deleted successfully`);
 };
 
-
-// Cancel an order
-export const cancelOrder = async (id: number): Promise<IBooking> => {
-  // First check if order exists
-  const order = await getOrderById(id);
-  if (order.status === "cancelled") {
-    logger.warn(`Order ${id} is already cancelled`);
-    throw new AppError(
-      "Order is already cancelled",
-      HttpStatusCode.BAD_REQUEST
-    );
-  }
-
-  const menuDetails = await getMenuById(order.menu_id);
-
-  // Combine menu date and start time to create the meal datetime
-  const menuDate = new Date(menuDetails.menu_date);
-  const [hours, minutes] = menuDetails.start_time!.split(':').map(Number);
-
-  // Create the exact datetime of the meal
-  const mealDateTime = new Date(
-    menuDate.getFullYear(),
-    menuDate.getMonth(),
-    menuDate.getDate(),
-    hours,
-    minutes,
-    0
-  );
-
-  // Calculate the minimum cancellation time (2 hours before meal)
-  const minimumCancellationTime = new Date(mealDateTime.getTime() - 2 * 60 * 60 * 1000);
-  const now = new Date();
-
-  // Check if we're still within the cancellation window
-  if (now > minimumCancellationTime) {
-    logger.warn(
-      `Cancellation too late for order ${id}. Current time: ${now.toISOString()}, ` +
-      `Minimum cancellation time: ${minimumCancellationTime.toISOString()}, ` +
-      `Meal time: ${mealDateTime.toISOString()}`
-    );
-    throw new AppError(
-      "Cannot cancel order. Cancellation must be done at least 2 hours before the meal time",
-      HttpStatusCode.BAD_REQUEST
-    );
-  }
-
-  logger.info(`Cancelling order ${id}. Time until meal: ${(mealDateTime.getTime() - now.getTime()) / (1000 * 60)} minutes`);
-  return await OrderModel.updateStatus(id, "cancelled");
-};
-
-
 // Get Orders for the logged-in user with JWT
 export const getOrdersForUser = async (userId: number): Promise<any[]> => {
   const orders = await OrderModel.findByUserId(userId);
   
-  // Fetch menu details for each order individually
+  
   const ordersWithMenuDetails = await Promise.all(
     orders.map(async (order) => {
       try {
