@@ -10,11 +10,11 @@ router.use(verifyJWT);
 // Get all orders
 router.get("/", orderController.getAllOrders);
 
+// Get orders for the authenticated user (moved before /:id to avoid conflicts)
+router.get("/my-orders", orderController.getOrdersByUser);
+
 // Get order by ID
 router.get("/:id", orderController.getOrder);
-
-// Get orders by user ID
-router.get("/user/:userId", orderController.getOrdersByUser);
 
 // Create new order
 router.post("/", orderController.createOrder);

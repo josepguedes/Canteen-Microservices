@@ -192,12 +192,19 @@ export const getAllOrders = catchAsync(async (req: Request, res: Response) => {
  }
  */
 export const getOrdersByUser = catchAsync(async (req: Request, res: Response) => {
-  logger.info('Fetching orders by user ID');
+  const userId = (req as any).userId;
+  
+  logger.info(`[OrderController] GET /orders/user/:userId - Fetching orders for authenticated user ${userId}`);
 
-  const { userId } = req.params;
-  logger.info(`Fetching orders for user ID: ${userId}`);
+  if (!userId) {
+    logger.warn("[OrderController] User ID is missing from JWT");
+    return res.status(HttpStatusCode.UNAUTHORIZED).json({
+      status: "error",
+      message: "Unauthorized",
+    });
+  }
 
-  const orders = await orderService.getOrdersByUserId(Number(userId));
+  const orders = await orderService.getOrdersByUserId(userId);
   logger.info(`Retrieved ${orders.length} orders for user ${userId}`);
 
   res.status(HttpStatusCode.OK).json({
@@ -266,7 +273,26 @@ export const getOrdersByUser = catchAsync(async (req: Request, res: Response) =>
  */
 export const createOrder = catchAsync(async (req: Request, res: Response) => {
   logger.info('Creating new order');
-  const order = await orderService.createOrder(req.body);
+  
+  // Extract user_id from JWT token
+  const userId = (req as any).userId;
+  
+  if (!userId) {
+    logger.warn("[OrderController] User ID is missing from JWT");
+    return res.status(HttpStatusCode.UNAUTHORIZED).json({
+      status: "error",
+      message: "Unauthorized - User ID not found in token",
+    });
+  }
+
+  // Merge user_id from token with request body
+  const orderData = {
+    ...req.body,
+    user_id: userId
+  };
+
+  logger.info(`Creating order for authenticated user ${userId}`);
+  const order = await orderService.createOrder(orderData);
   logger.info(`Order created successfully with ID: ${order.booking_id}`);
 
   res.status(HttpStatusCode.CREATED).json({
@@ -479,24 +505,15 @@ export const deleteOrder = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-
-// function that help cancel orther 2h before the meal time 
+// Cancel order
 export const cancelOrder = catchAsync(async (req: Request, res: Response) => {
+  logger.info('Cancelling order');
   const { id } = req.params;
-  const orderId = Number(id);
-  logger.info(`Checking if order ${orderId} needs to be cancelled`);
-  const order = await orderService.getOrderById(orderId);
-  const currentTime = new Date();
-  const mealTime = new Date(order.meal_time);
-  const timeDifference = mealTime.getTime() - currentTime.getTime();
-  const hoursDifference = timeDifference / (1000 * 60 * 60);
-  if (hoursDifference < 2 && order.status !== 'cancelled') {
-    logger.info(`Cancelling order ${orderId} as it is within 2 hours of meal time`);
-    await orderService.updateOrderStatus(orderId, 'cancelled');
-    logger.info(`Order ${orderId} cancelled successfully`);
-  }
+  logger.info(`Cancelling order with ID: ${id}`);
+  const order = await orderService.cancelOrder(Number(id));
+  logger.info(`Order ${id} cancelled successfully`);
   res.status(HttpStatusCode.OK).json({
     status: "success",
-    message: `Order ${orderId} cancellation processed`,
+    data: order,
   });
 });

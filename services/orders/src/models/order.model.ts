@@ -16,12 +16,13 @@ export type BookingStatus = 'pending' | 'cancelled' | 'completed';
 
 export interface IBooking {
     booking_id?: number;
-    user_id: number;
+    user_id: number | string;
     menu_id: number;
     status: BookingStatus;
     created_at?: Date;
     updated_at?: Date;
 }
+
 
 // Model methods with database logic
 export const findById = async (id: number): Promise<IBooking | null> => {
@@ -41,7 +42,7 @@ export const findAll = async (): Promise<IBooking[]> => {
   return result.rows;
 };
 
-export const findByUserId = async (userId: number): Promise<IBooking[]> => {
+export const findByUserId = async (userId: number | string): Promise<IBooking[]> => {
   const result = await pool.query(
     "SELECT * FROM bookings WHERE user_id = $1 ORDER BY created_at DESC",
     [userId]

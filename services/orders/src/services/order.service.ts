@@ -2,10 +2,11 @@ import { IBooking, BookingStatus } from "../models/order.model";
 import * as OrderModel from "../models/order.model";
 import AppError from "../utils/AppError";
 import * as HttpStatusCode from "../constants/httpStatusCode";
+import { getMenuById } from "./menu.service";
 import logger from "../utils/logger";
 
 // Get order by ID
-export const getOrderById = async (id: number): Promise<IBooking> => {
+export const getOrderById = async (id: number): Promise<any> => {
   const order = await OrderModel.findById(id);
 
   if (!order) {
@@ -16,17 +17,54 @@ export const getOrderById = async (id: number): Promise<IBooking> => {
     );
   }
 
-  return order;
+  // Fetch menu details for this order
+  try {
+    const menu_details = await getMenuById(order.menu_id);
+    return { ...order, menu_details };
+  } catch (error) {
+    logger.warn(`Failed to fetch menu details for menu_id ${order.menu_id}`);
+    return { ...order, menu_details: null };
+  }
 };
 
 // Get all orders
-export const getAllOrders = async (): Promise<IBooking[]> => {
-  return await OrderModel.findAll();
+export const getAllOrders = async (): Promise<any[]> => {
+  const orders = await OrderModel.findAll();
+  
+  // Fetch menu details for each order individually
+  const ordersWithMenuDetails = await Promise.all(
+    orders.map(async (order) => {
+      try {
+        const menu_details = await getMenuById(order.menu_id);
+        return { ...order, menu_details };
+      } catch (error) {
+        logger.warn(`Failed to fetch menu details for menu_id ${order.menu_id}`);
+        return { ...order, menu_details: null };
+      }
+    })
+  );
+  
+  return ordersWithMenuDetails;
 };
 
-// Get orders by user ID
-export const getOrdersByUserId = async (userId: number): Promise<IBooking[]> => {
-  return await OrderModel.findByUserId(userId);
+// Get orders by user and extract is id from token
+export const getOrdersByUserId = async (userId: number | string): Promise<any[]> => {
+  const orders = await OrderModel.findByUserId(userId);
+  
+  // Fetch menu details for each order individually
+  const ordersWithMenuDetails = await Promise.all(
+    orders.map(async (order) => {
+      try {
+        const menu_details = await getMenuById(order.menu_id);
+        return { ...order, menu_details };
+      } catch (error) {
+        logger.warn(`Failed to fetch menu details for menu_id ${order.menu_id}`);
+        return { ...order, menu_details: null };
+      }
+    })
+  );
+  
+  return ordersWithMenuDetails;
 };
 
 // Create a new order
@@ -37,7 +75,7 @@ export const createOrder = async (orderData: IBooking): Promise<IBooking> => {
   if (!user_id || !menu_id) {
     logger.error(`Missing required fields for order creation: user_id=${user_id}, menu_id=${menu_id}`);
     throw new AppError(
-      "Missing required fields: user_id and menu_id are required",
+      "Missing required fields: menu_id is required",
       HttpStatusCode.BAD_REQUEST
     );
   }
@@ -90,8 +128,73 @@ export const deleteOrder = async (id: number): Promise<void> => {
   logger.info(`Order ${id} deleted successfully`);
 };
 
-// verify if is it possible to cancel an order
-export const canCancelOrder = async (id: number): Promise<boolean> => {
+
+// Cancel an order
+export const cancelOrder = async (id: number): Promise<IBooking> => {
+  // First check if order exists
   const order = await getOrderById(id);
-  return order.status === "pending";
+  if (order.status === "cancelled") {
+    logger.warn(`Order ${id} is already cancelled`);
+    throw new AppError(
+      "Order is already cancelled",
+      HttpStatusCode.BAD_REQUEST
+    );
+  }
+
+  const menuDetails = await getMenuById(order.menu_id);
+
+  // Combine menu date and start time to create the meal datetime
+  const menuDate = new Date(menuDetails.menu_date);
+  const [hours, minutes] = menuDetails.start_time!.split(':').map(Number);
+
+  // Create the exact datetime of the meal
+  const mealDateTime = new Date(
+    menuDate.getFullYear(),
+    menuDate.getMonth(),
+    menuDate.getDate(),
+    hours,
+    minutes,
+    0
+  );
+
+  // Calculate the minimum cancellation time (2 hours before meal)
+  const minimumCancellationTime = new Date(mealDateTime.getTime() - 2 * 60 * 60 * 1000);
+  const now = new Date();
+
+  // Check if we're still within the cancellation window
+  if (now > minimumCancellationTime) {
+    logger.warn(
+      `Cancellation too late for order ${id}. Current time: ${now.toISOString()}, ` +
+      `Minimum cancellation time: ${minimumCancellationTime.toISOString()}, ` +
+      `Meal time: ${mealDateTime.toISOString()}`
+    );
+    throw new AppError(
+      "Cannot cancel order. Cancellation must be done at least 2 hours before the meal time",
+      HttpStatusCode.BAD_REQUEST
+    );
+  }
+
+  logger.info(`Cancelling order ${id}. Time until meal: ${(mealDateTime.getTime() - now.getTime()) / (1000 * 60)} minutes`);
+  return await OrderModel.updateStatus(id, "cancelled");
+};
+
+
+// Get Orders for the logged-in user with JWT
+export const getOrdersForUser = async (userId: number): Promise<any[]> => {
+  const orders = await OrderModel.findByUserId(userId);
+  
+  // Fetch menu details for each order individually
+  const ordersWithMenuDetails = await Promise.all(
+    orders.map(async (order) => {
+      try {
+        const menu_details = await getMenuById(order.menu_id);
+        return { ...order, menu_details };
+      } catch (error) {
+        logger.warn(`Failed to fetch menu details for menu_id ${order.menu_id}`);
+        return { ...order, menu_details: null };
+      }
+    })
+  );
+  
+  return ordersWithMenuDetails;
 };

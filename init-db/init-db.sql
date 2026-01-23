@@ -123,3 +123,8 @@ CREATE TABLE IF NOT EXISTS bookings (
     updated_at TIMESTAMP DEFAULT NOW(),
     CONSTRAINT unique_user_menu UNIQUE (user_id, menu_id)
 );
+
+-- Insert sample bookings
+INSERT INTO bookings (user_id, menu_id, status) VALUES
+('11111111-1111-1111-1111-111111111111', 1, 'confirmed'),
+('22222222-2222-2222-2222-222222222222', 2, 'confirmed');
