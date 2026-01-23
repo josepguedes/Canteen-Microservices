@@ -313,7 +313,5 @@ This project was developed by:
 
 This project is for educational purposes.
 
----
 
-**Note**: This system is an academic project and should not be used in production without additional security measures.
 
