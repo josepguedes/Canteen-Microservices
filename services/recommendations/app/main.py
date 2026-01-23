@@ -21,7 +21,7 @@ async def get_recommendations(
     liked = await get_liked_dishes(user_id)
     menu = await get_today_menu(meal_type)
 
-    available = [d["id"] for d in menu["dishes"]]
+    available = menu["dishes"]
     dish_id = recommend_dish(liked, available)
 
     if not dish_id:
