@@ -15,6 +15,17 @@ const server = new ApolloServer({
   typeDefs,
   resolvers,
   introspection: true,
+  formatError: (formattedError, error) => {
+    // Customize error formatting for better API documentation
+    return {
+      message: formattedError.message,
+      code: formattedError.extensions?.code,
+      path: formattedError.path,
+      ...(process.env.NODE_ENV === 'development' && {
+        stack: formattedError.extensions?.exception?.stacktrace,
+      }),
+    };
+  },
 });
 
 startStandaloneServer(server, {
@@ -55,5 +66,7 @@ startStandaloneServer(server, {
     }
   },
 }).then(({ url }) => {
-  logger.info(`Menu Service (GraphQL) ready at ${url}`);
+  logger.info(`🚀 Menu Service (GraphQL) ready at ${url}`);
+  logger.info(`📚 GraphQL Playground available at ${url}`);
+  logger.info(`📖 Access GraphQL Schema and Documentation in the Apollo Studio Sandbox`);
 });

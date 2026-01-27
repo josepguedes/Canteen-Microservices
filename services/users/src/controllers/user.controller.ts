@@ -4,6 +4,32 @@ import catchAsync from "../utils/catchAsync";
 import logger from "../utils/logger";
 import * as HttpStatusCode from "../constants/httpStatusCode";
 
+/*
+ #swagger.tags = ['Users']
+ #swagger.summary = 'Get all users'
+ #swagger.description = 'Retrieve a list of all registered users. Requires authentication.'
+ #swagger.security = [{ "bearerAuth": [] }]
+ #swagger.responses[200] = { 
+   description: 'Users retrieved successfully', 
+   schema: { 
+     success: true,
+     count: 2,
+     data: [
+       {
+         id: 1,
+         email: 'john.doe@example.com',
+         name: 'John Doe',
+         created_at: '2026-01-27T12:00:00Z',
+         updated_at: '2026-01-27T12:00:00Z'
+       }
+     ]
+   } 
+ }
+ #swagger.responses[401] = { 
+   description: 'Unauthorized - Invalid or missing JWT token',
+   schema: { success: false, message: 'Unauthorized' }
+ }
+ */
 export const getAllUsers = catchAsync(async (req: Request, res: Response) => {
   logger.info("[UserController] GET /users - Request to get all users");
 
@@ -18,6 +44,43 @@ export const getAllUsers = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+/*
+ #swagger.tags = ['Users']
+ #swagger.summary = 'Get user by ID'
+ #swagger.description = 'Retrieve a specific user by their ID. Users can only access their own data.'
+ #swagger.security = [{ "bearerAuth": [] }]
+ #swagger.parameters['id'] = {
+   in: 'path',
+   description: 'User ID',
+   required: true,
+   type: 'integer'
+ }
+ #swagger.responses[200] = { 
+   description: 'User retrieved successfully', 
+   schema: { 
+     success: true,
+     data: {
+       id: 1,
+       email: 'john.doe@example.com',
+       name: 'John Doe',
+       created_at: '2026-01-27T12:00:00Z',
+       updated_at: '2026-01-27T12:00:00Z'
+     }
+   } 
+ }
+ #swagger.responses[400] = { 
+   description: 'Bad request - Missing user ID',
+   schema: { success: false, message: 'User ID is required' }
+ }
+ #swagger.responses[401] = { 
+   description: 'Unauthorized',
+   schema: { success: false, message: 'Unauthorized' }
+ }
+ #swagger.responses[403] = { 
+   description: 'Forbidden - Cannot access other users data',
+   schema: { success: false, message: 'You can only access your own user data' }
+ }
+ */
 export const getUserById = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
   const userId = (req as any).userId;
@@ -66,6 +129,55 @@ export const getUserById = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+/*
+ #swagger.tags = ['Users', 'Authentication']
+ #swagger.summary = 'Create new user (Register)'
+ #swagger.description = 'Register a new user account. No authentication required.'
+ #swagger.parameters['body'] = {
+   in: 'body',
+   description: 'User registration data',
+   required: true,
+   schema: {
+     type: 'object',
+     properties: {
+       email: {
+         type: 'string',
+         example: 'john.doe@example.com',
+         description: 'User email address'
+       },
+       name: {
+         type: 'string',
+         example: 'John Doe',
+         description: 'User full name'
+       },
+       password: {
+         type: 'string',
+         example: 'SecurePassword123!',
+         description: 'User password'
+       }
+     },
+     required: ['email', 'name', 'password']
+   }
+ }
+ #swagger.responses[201] = { 
+   description: 'User created successfully', 
+   schema: { 
+     success: true,
+     message: 'User created successfully',
+     data: {
+       id: 1,
+       email: 'john.doe@example.com',
+       name: 'John Doe',
+       created_at: '2026-01-27T12:00:00Z',
+       updated_at: '2026-01-27T12:00:00Z'
+     }
+   } 
+ }
+ #swagger.responses[400] = { 
+   description: 'Bad request - Missing required fields',
+   schema: { success: false, message: 'Email, name, and password are required' }
+ }
+ */
 export const createUser = catchAsync(async (req: Request, res: Response) => {
   const { email, name, password } = req.body;
 
@@ -94,6 +206,32 @@ export const createUser = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+/*
+ #swagger.tags = ['Users']
+ #swagger.summary = 'Delete user account'
+ #swagger.description = 'Delete the authenticated users own account. Requires authentication.'
+ #swagger.security = [{ "bearerAuth": [] }]
+ #swagger.responses[200] = { 
+   description: 'User deleted successfully', 
+   schema: { 
+     success: true,
+     message: 'User deleted successfully',
+     data: {
+       id: 1,
+       email: 'john.doe@example.com',
+       name: 'John Doe'
+     }
+   } 
+ }
+ #swagger.responses[400] = { 
+   description: 'Bad request',
+   schema: { success: false, message: 'User ID is required' }
+ }
+ #swagger.responses[401] = { 
+   description: 'Unauthorized',
+   schema: { success: false, message: 'Unauthorized' }
+ }
+ */
 export const deleteUser = catchAsync(async (req: Request, res: Response) => {
   const userId = (req as any).userId;
 
@@ -120,6 +258,44 @@ export const deleteUser = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+/*
+ #swagger.tags = ['Authentication']
+ #swagger.summary = 'User login'
+ #swagger.description = 'Authenticate a user and receive a JWT token for subsequent requests.'
+ #swagger.parameters['body'] = {
+   in: 'body',
+   description: 'Login credentials',
+   required: true,
+   schema: {
+     type: 'object',
+     properties: {
+       email: {
+         type: 'string',
+         example: 'john.doe@example.com',
+         description: 'User email address'
+       },
+       password: {
+         type: 'string',
+         example: 'SecurePassword123!',
+         description: 'User password'
+       }
+     },
+     required: ['email', 'password']
+   }
+ }
+ #swagger.responses[200] = { 
+   description: 'Login successful', 
+   schema: { $ref: '#/definitions/LoginResponse' }
+ }
+ #swagger.responses[400] = { 
+   description: 'Bad request - Missing credentials',
+   schema: { success: false, message: 'Email and password are required' }
+ }
+ #swagger.responses[401] = { 
+   description: 'Invalid credentials',
+   schema: { success: false, message: 'Invalid email or password' }
+ }
+ */
 export const loginUser = catchAsync(async (req: Request, res: Response) => {
   const { email, password } = req.body;
 
@@ -148,6 +324,54 @@ export const loginUser = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+/*
+ #swagger.tags = ['Users']
+ #swagger.summary = 'Update user profile'
+ #swagger.description = 'Update the authenticated users profile information. Requires authentication.'
+ #swagger.security = [{ "bearerAuth": [] }]
+ #swagger.parameters['body'] = {
+   in: 'body',
+   description: 'Updated user data (at least one field required)',
+   required: true,
+   schema: {
+     type: 'object',
+     properties: {
+       email: {
+         type: 'string',
+         example: 'john.updated@example.com',
+         description: 'New email address (optional)'
+       },
+       name: {
+         type: 'string',
+         example: 'John Updated',
+         description: 'New full name (optional)'
+       }
+     }
+   }
+ }
+ #swagger.responses[200] = { 
+   description: 'User updated successfully', 
+   schema: { 
+     success: true,
+     message: 'User updated successfully',
+     data: {
+       id: 1,
+       email: 'john.updated@example.com',
+       name: 'John Updated',
+       created_at: '2026-01-27T12:00:00Z',
+       updated_at: '2026-01-27T14:00:00Z'
+     }
+   } 
+ }
+ #swagger.responses[400] = { 
+   description: 'Bad request',
+   schema: { success: false, message: 'At least one field (email or name) must be provided' }
+ }
+ #swagger.responses[401] = { 
+   description: 'Unauthorized',
+   schema: { success: false, message: 'Unauthorized' }
+ }
+ */
 export const updateUser = catchAsync(async (req: Request, res: Response) => {
   const userId = (req as any).userId;
   const { email, name } = req.body;
@@ -187,6 +411,38 @@ export const updateUser = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+/*
+ #swagger.tags = ['Likes']
+ #swagger.summary = 'Add liked dish'
+ #swagger.description = 'Add a dish to the authenticated users liked dishes list.'
+ #swagger.security = [{ "bearerAuth": [] }]
+ #swagger.parameters['dishId'] = {
+   in: 'path',
+   description: 'Dish ID to like',
+   required: true,
+   type: 'integer'
+ }
+ #swagger.responses[201] = { 
+   description: 'Dish liked successfully', 
+   schema: { 
+     success: true,
+     message: 'Dish liked successfully',
+     data: {
+       user_id: 1,
+       dish_id: 5,
+       created_at: '2026-01-27T12:00:00Z'
+     }
+   } 
+ }
+ #swagger.responses[400] = { 
+   description: 'Bad request',
+   schema: { success: false, message: 'User ID and Dish ID are required' }
+ }
+ #swagger.responses[401] = { 
+   description: 'Unauthorized',
+   schema: { success: false, message: 'Unauthorized' }
+ }
+ */
 export const addLikedDish = catchAsync(async (req: Request, res: Response) => {
   const { dishId } = req.params;
   const userId = (req as any).userId;
@@ -216,6 +472,39 @@ export const addLikedDish = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+/*
+ #swagger.tags = ['Likes']
+ #swagger.summary = 'Get liked dishes for authenticated user'
+ #swagger.description = 'Retrieve all dishes liked by the authenticated user.'
+ #swagger.security = [{ "bearerAuth": [] }]
+ #swagger.responses[200] = { 
+   description: 'Liked dishes retrieved successfully', 
+   schema: { 
+     success: true,
+     count: 3,
+     data: [
+       {
+         user_id: 1,
+         dish_id: 5,
+         created_at: '2026-01-27T12:00:00Z'
+       },
+       {
+         user_id: 1,
+         dish_id: 8,
+         created_at: '2026-01-27T13:00:00Z'
+       }
+     ]
+   } 
+ }
+ #swagger.responses[400] = { 
+   description: 'Bad request',
+   schema: { success: false, message: 'User ID is required' }
+ }
+ #swagger.responses[401] = { 
+   description: 'Unauthorized',
+   schema: { success: false, message: 'Unauthorized' }
+ }
+ */
 export const getLikedDishes = catchAsync(
   async (req: Request, res: Response) => {
     const userId = (req as any).userId;
@@ -246,6 +535,31 @@ export const getLikedDishes = catchAsync(
   },
 );
 
+/*
+ #swagger.tags = ['Likes']
+ #swagger.summary = 'Get liked dishes by user ID'
+ #swagger.description = 'Retrieve all dishes liked by a specific user. Public endpoint.'
+ #swagger.parameters['id'] = {
+   in: 'path',
+   description: 'User ID',
+   required: true,
+   type: 'integer'
+ }
+ #swagger.responses[200] = { 
+   description: 'Liked dishes retrieved successfully', 
+   schema: { 
+     success: true,
+     count: 2,
+     data: [
+       {
+         user_id: 1,
+         dish_id: 5,
+         created_at: '2026-01-27T12:00:00Z'
+       }
+     ]
+   } 
+ }
+ */
 export const getLikedDishesByUserId = catchAsync(
   async (req: Request, res: Response) => {
     const userId = req.params.id;

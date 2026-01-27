@@ -1,0 +1,390 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Orders Service API",
+    "version": "1.0.0",
+    "description": "API documentation for the Canteen Orders microservice. This service manages order/booking operations for menu items.\n\n**Important Business Rules:**\n- Orders must be placed at least 2 hours before the meal time\n- Orders can only be cancelled at least 2 hours before the meal time\n- User ID is automatically extracted from JWT token"
+  },
+  "host": "localhost:5001",
+  "basePath": "/orders",
+  "schemes": ["http"],
+  "consumes": ["application/json"],
+  "produces": ["application/json"],
+  "tags": [
+    {
+      "name": "Orders",
+      "description": "Order/Booking management operations"
+    }
+  ],
+  "securityDefinitions": {
+    "BearerAuth": {
+      "type": "apiKey",
+      "name": "Authorization",
+      "in": "header",
+      "description": "JWT Bearer token. Format: Bearer {token}"
+    }
+  },
+  "paths": {
+    "/": {
+      "get": {
+        "tags": ["Orders"],
+        "summary": "Get all orders",
+        "description": "Retrieve a list of all orders in the system. Requires authentication.",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Orders retrieved successfully",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": { "type": "string", "example": "success" },
+                "results": { "type": "integer", "example": 10 },
+                "data": {
+                  "type": "array",
+                  "items": { "$ref": "#/definitions/OrderWithMenuDetails" }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing JWT token"
+          }
+        }
+      },
+      "post": {
+        "tags": ["Orders"],
+        "summary": "Create new order",
+        "description": "Create a new order/booking for a menu item.\n\n**Important:** Orders must be placed at least 2 hours before the meal time. User ID is automatically extracted from JWT token.",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "description": "Order data. Only menu_id and optional status are required. User ID comes from JWT token.",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": ["menu_id"],
+              "properties": {
+                "menu_id": {
+                  "type": "integer",
+                  "example": 1,
+                  "description": "Menu ID to order"
+                },
+                "status": {
+                  "type": "string",
+                  "example": "confirmed",
+                  "description": "Order status (optional, defaults to 'confirmed')",
+                  "enum": ["confirmed", "pending", "cancelled"]
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Order created successfully",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": { "type": "string", "example": "success" },
+                "data": { "$ref": "#/definitions/Order" }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - Invalid data or order placed less than 2 hours before meal time",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": { "type": "string", "example": "error" },
+                "message": { "type": "string", "example": "Orders must be placed at least 2 hours before the meal time" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/my-orders": {
+      "get": {
+        "tags": ["Orders"],
+        "summary": "Get orders for authenticated user",
+        "description": "Retrieve all orders for the currently logged-in user. User ID is extracted from JWT token automatically. Each order includes enriched menu details.",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "User orders retrieved successfully",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": { "type": "string", "example": "success" },
+                "results": { "type": "integer", "example": 5 },
+                "data": {
+                  "type": "array",
+                  "items": { "$ref": "#/definitions/OrderWithMenuDetails" }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing JWT token"
+          }
+        }
+      }
+    },
+    "/{id}": {
+      "get": {
+        "tags": ["Orders"],
+        "summary": "Get order by ID",
+        "description": "Retrieve a specific order by its ID. Requires authentication.",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Order/Booking ID",
+            "required": true,
+            "type": "integer",
+            "example": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Order retrieved successfully",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": { "type": "string", "example": "success" },
+                "data": { "$ref": "#/definitions/OrderWithMenuDetails" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Order not found"
+          }
+        }
+      },
+      "put": {
+        "tags": ["Orders"],
+        "summary": "Update order",
+        "description": "Update an existing order. Requires authentication.\n\n**Important:** When cancelling an order (updating status to 'cancelled'), it can only be done at least 2 hours before the meal time.",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Order/Booking ID",
+            "required": true,
+            "type": "integer",
+            "example": 1
+          },
+          {
+            "in": "body",
+            "name": "body",
+            "description": "Updated order data. When changing status to 'cancelled', the 2-hour rule applies.",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "example": "cancelled",
+                  "description": "Updated order status. If changing to 'cancelled', must be at least 2 hours before meal time.",
+                  "enum": ["confirmed", "pending", "cancelled"]
+                },
+                "menu_id": {
+                  "type": "integer",
+                  "example": 2,
+                  "description": "Updated menu ID (optional)"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Order updated successfully",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": { "type": "string", "example": "success" },
+                "data": { "$ref": "#/definitions/Order" }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - Cancellation attempted less than 2 hours before meal time",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": { "type": "string", "example": "error" },
+                "message": { "type": "string", "example": "Orders can only be cancelled at least 2 hours before the meal time" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Order not found"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Orders"],
+        "summary": "Delete order",
+        "description": "Delete an existing order by ID. This is a permanent deletion (hard delete). Requires authentication.",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Order/Booking ID to delete",
+            "required": true,
+            "type": "integer",
+            "example": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Order deleted successfully",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": { "type": "string", "example": "success" },
+                "message": { "type": "string", "example": "Order deleted successfully" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Order not found"
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "Order": {
+      "type": "object",
+      "properties": {
+        "booking_id": {
+          "type": "integer",
+          "example": 1,
+          "description": "Unique booking/order ID"
+        },
+        "user_id": {
+          "type": "integer",
+          "example": 1,
+          "description": "User ID who placed the order"
+        },
+        "menu_id": {
+          "type": "integer",
+          "example": 1,
+          "description": "Menu item ID"
+        },
+        "status": {
+          "type": "string",
+          "example": "confirmed",
+          "description": "Order status",
+          "enum": ["confirmed", "pending", "cancelled"]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "example": "2026-01-27T10:00:00Z",
+          "description": "Order creation timestamp"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "example": "2026-01-27T10:00:00Z",
+          "description": "Last update timestamp"
+        }
+      }
+    },
+    "MenuDetails": {
+      "type": "object",
+      "properties": {
+        "id_menu": {
+          "type": "integer",
+          "example": 1,
+          "description": "Menu ID"
+        },
+        "dish_name": {
+          "type": "string",
+          "example": "Grilled Chicken",
+          "description": "Name of the dish"
+        },
+        "dish_category": {
+          "type": "string",
+          "example": "main",
+          "description": "Category of the dish"
+        },
+        "menu_date": {
+          "type": "string",
+          "format": "date",
+          "example": "2026-01-27",
+          "description": "Menu date"
+        },
+        "start_time": {
+          "type": "string",
+          "example": "12:00:00",
+          "description": "Meal period start time"
+        },
+        "end_time": {
+          "type": "string",
+          "example": "14:00:00",
+          "description": "Meal period end time"
+        },
+        "menu_period": {
+          "type": "string",
+          "example": "lunch",
+          "description": "Meal period (breakfast, lunch, dinner)"
+        }
+      }
+    },
+    "OrderWithMenuDetails": {
+      "type": "object",
+      "properties": {
+        "booking_id": {
+          "type": "integer",
+          "example": 1
+        },
+        "user_id": {
+          "type": "integer",
+          "example": 1
+        },
+        "menu_id": {
+          "type": "integer",
+          "example": 1
+        },
+        "status": {
+          "type": "string",
+          "example": "confirmed"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "example": "2026-01-27T10:00:00Z"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "example": "2026-01-27T10:00:00Z"
+        },
+        "menu_details": {
+          "$ref": "#/definitions/MenuDetails"
+        }
+      }
+    }
+  }
+}
