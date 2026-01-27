@@ -1,0 +1,417 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Users Service API",
+    "version": "1.0.0",
+    "description": "API documentation for the Canteen Users microservice. This service handles user management, authentication, and user preferences (liked dishes)."
+  },
+  "host": "localhost:5000",
+  "basePath": "/users",
+  "schemes": ["http"],
+  "consumes": ["application/json"],
+  "produces": ["application/json"],
+  "tags": [
+    {
+      "name": "Authentication",
+      "description": "User authentication endpoints"
+    },
+    {
+      "name": "Users",
+      "description": "User management operations"
+    },
+    {
+      "name": "Likes",
+      "description": "User dish preferences"
+    }
+  ],
+  "securityDefinitions": {
+    "BearerAuth": {
+      "type": "apiKey",
+      "name": "Authorization",
+      "in": "header",
+      "description": "JWT Bearer token. Format: Bearer {token}"
+    }
+  },
+  "paths": {
+    "/": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Register new user",
+        "description": "Create a new user account. No authentication required.",
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "description": "User registration data",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": ["email", "name", "password"],
+              "properties": {
+                "email": {
+                  "type": "string",
+                  "format": "email",
+                  "example": "john.doe@example.com",
+                  "description": "User email address"
+                },
+                "name": {
+                  "type": "string",
+                  "example": "John Doe",
+                  "description": "User full name"
+                },
+                "password": {
+                  "type": "string",
+                  "format": "password",
+                  "example": "SecurePassword123!",
+                  "description": "User password (min 6 characters)"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "User created successfully",
+            "schema": {
+              "$ref": "#/definitions/UserResponse"
+            }
+          },
+          "400": {
+            "description": "Bad request - Missing required fields"
+          }
+        }
+      },
+      "get": {
+        "tags": ["Users"],
+        "summary": "Get all users",
+        "description": "Retrieve a list of all registered users. Requires authentication.",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Users retrieved successfully",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "success": { "type": "boolean", "example": true },
+                "count": { "type": "integer", "example": 10 },
+                "data": {
+                  "type": "array",
+                  "items": { "$ref": "#/definitions/User" }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "put": {
+        "tags": ["Users"],
+        "summary": "Update user profile",
+        "description": "Update the authenticated user's profile. Requires authentication.",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "description": "Updated user data (at least one field required)",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "email": {
+                  "type": "string",
+                  "format": "email",
+                  "example": "john.updated@example.com",
+                  "description": "New email address"
+                },
+                "name": {
+                  "type": "string",
+                  "example": "John Updated",
+                  "description": "New name"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User updated successfully",
+            "schema": { "$ref": "#/definitions/UserResponse" }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Users"],
+        "summary": "Delete user account",
+        "description": "Delete the authenticated user's account. Requires authentication.",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "User deleted successfully"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/login": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "User login",
+        "description": "Authenticate a user and receive a JWT token.",
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "description": "Login credentials",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": ["email", "password"],
+              "properties": {
+                "email": {
+                  "type": "string",
+                  "format": "email",
+                  "example": "john.doe@example.com",
+                  "description": "User email address"
+                },
+                "password": {
+                  "type": "string",
+                  "format": "password",
+                  "example": "SecurePassword123!",
+                  "description": "User password"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Login successful",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "success": { "type": "boolean", "example": true },
+                "message": { "type": "string", "example": "Login successful" },
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "id": { "type": "integer", "example": 1 },
+                    "email": { "type": "string", "example": "john.doe@example.com" },
+                    "name": { "type": "string", "example": "John Doe" },
+                    "token": { "type": "string", "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - Missing credentials"
+          },
+          "401": {
+            "description": "Invalid credentials"
+          }
+        }
+      }
+    },
+    "/{id}": {
+      "get": {
+        "tags": ["Users"],
+        "summary": "Get user by ID",
+        "description": "Retrieve a specific user by their ID. Users can only access their own data.",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "User ID",
+            "required": true,
+            "type": "integer",
+            "example": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User retrieved successfully",
+            "schema": { "$ref": "#/definitions/UserResponse" }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - Cannot access other users' data"
+          }
+        }
+      }
+    },
+    "/likes": {
+      "get": {
+        "tags": ["Likes"],
+        "summary": "Get liked dishes",
+        "description": "Get all dishes liked by the authenticated user.",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Liked dishes retrieved successfully",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "success": { "type": "boolean", "example": true },
+                "count": { "type": "integer", "example": 5 },
+                "data": {
+                  "type": "array",
+                  "items": { "$ref": "#/definitions/LikedDish" }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/likes/{dishId}": {
+      "post": {
+        "tags": ["Likes"],
+        "summary": "Like a dish",
+        "description": "Add a dish to the authenticated user's liked dishes.",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "dishId",
+            "in": "path",
+            "description": "Dish ID to like",
+            "required": true,
+            "type": "integer",
+            "example": 5
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Dish liked successfully",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "success": { "type": "boolean", "example": true },
+                "message": { "type": "string", "example": "Dish liked successfully" },
+                "data": { "$ref": "#/definitions/LikedDish" }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/{id}/likes": {
+      "get": {
+        "tags": ["Likes"],
+        "summary": "Get user's liked dishes by user ID",
+        "description": "Retrieve all dishes liked by a specific user (public endpoint).",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "User ID",
+            "required": true,
+            "type": "integer",
+            "example": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Liked dishes retrieved successfully",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "success": { "type": "boolean", "example": true },
+                "count": { "type": "integer", "example": 3 },
+                "data": {
+                  "type": "array",
+                  "items": { "$ref": "#/definitions/LikedDish" }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "User": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer",
+          "example": 1
+        },
+        "email": {
+          "type": "string",
+          "example": "john.doe@example.com"
+        },
+        "name": {
+          "type": "string",
+          "example": "John Doe"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "example": "2026-01-27T12:00:00Z"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "example": "2026-01-27T12:00:00Z"
+        }
+      }
+    },
+    "UserResponse": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean",
+          "example": true
+        },
+        "message": {
+          "type": "string",
+          "example": "Operation successful"
+        },
+        "data": {
+          "$ref": "#/definitions/User"
+        }
+      }
+    },
+    "LikedDish": {
+      "type": "object",
+      "properties": {
+        "user_id": {
+          "type": "integer",
+          "example": 1
+        },
+        "dish_id": {
+          "type": "integer",
+          "example": 5
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "example": "2026-01-27T12:00:00Z"
+        }
+      }
+    }
+  }
+}
