@@ -4,6 +4,12 @@ import AppError from "../utils/AppError.js";
 import * as HttpStatusCode from "../constants/httpStatusCode.js";
 import logger from "../utils/logger.js";
 
+const PostgresErrorCode = {
+  UNIQUE_VIOLATION: '23505',
+  FOREIGN_KEY_VIOLATION: '23503',
+  CHECK_VIOLATION: '23514',
+} as const;
+
 interface CreatePeriodTimeInput {
   menu_period: string;
   start_time: string;
@@ -17,14 +23,16 @@ interface UpdatePeriodTimeInput {
 }
 
 class PeriodTimeService {
+  // Helper function to convert time string to minutes
+  private timeToMinutes(time: string): number {
+    const [hours, minutes] = time.split(':').map(Number);
+    return hours * 60 + minutes;
+  }
+
   // Helper function to validate time order
   private validateTimeOrder(start_time: string, end_time: string): void {
-    // Convert time strings to comparable format (HH:MM:SS)
-    const startParts = start_time.split(':');
-    const endParts = end_time.split(':');
-    
-    const startMinutes = parseInt(startParts[0]) * 60 + parseInt(startParts[1]);
-    const endMinutes = parseInt(endParts[0]) * 60 + parseInt(endParts[1]);
+    const startMinutes = this.timeToMinutes(start_time);
+    const endMinutes = this.timeToMinutes(end_time);
     
     if (startMinutes >= endMinutes) {
       throw new AppError(
@@ -77,7 +85,7 @@ class PeriodTimeService {
       logger.info({ id: result.rows[0].id }, "Period created successfully");
       return result.rows[0];
     } catch (error: any) {
-      if (error.code === "23505") {
+      if (error.code === PostgresErrorCode.UNIQUE_VIOLATION) {
         throw new AppError(
           `Period '${menu_period}' already exists`,
           HttpStatusCode.CONFLICT
@@ -139,7 +147,7 @@ class PeriodTimeService {
       logger.info({ id }, "Period updated successfully");
       return result.rows[0];
     } catch (error: any) {
-      if (error.code === "23505") {
+      if (error.code === PostgresErrorCode.UNIQUE_VIOLATION) {
         throw new AppError(
           "A period with this name already exists",
           HttpStatusCode.CONFLICT

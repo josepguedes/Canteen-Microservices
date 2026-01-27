@@ -9,7 +9,51 @@ import AppError from "../utils/AppError.js";
 import * as HttpStatusCode from "../constants/httpStatusCode.js";
 import logger from "../utils/logger.js";
 
+const PostgresErrorCode = {
+  UNIQUE_VIOLATION: '23505',
+  FOREIGN_KEY_VIOLATION: '23503',
+  CHECK_VIOLATION: '23514',
+} as const;
+
 class MenuService {
+  // Private helper methods for validation
+  private validateDateFormat(date: string): void {
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateRegex.test(date)) {
+      throw new AppError(
+        "Invalid date format. Use YYYY-MM-DD",
+        HttpStatusCode.BAD_REQUEST,
+      );
+    }
+  }
+
+  private async validateDishExists(dish_id: number): Promise<void> {
+    const result = await pool.query(
+      "SELECT 1 FROM dishes WHERE id_dish = $1",
+      [dish_id],
+    );
+
+    if (result.rows.length === 0) {
+      throw new AppError(
+        `Dish with ID ${dish_id} not found`,
+        HttpStatusCode.NOT_FOUND,
+      );
+    }
+  }
+
+  private async validatePeriodExists(period_id: number): Promise<void> {
+    const result = await pool.query(
+      "SELECT 1 FROM period_time WHERE id = $1",
+      [period_id],
+    );
+
+    if (result.rows.length === 0) {
+      throw new AppError(
+        `Period with ID ${period_id} not found`,
+        HttpStatusCode.NOT_FOUND,
+      );
+    }
+  }
   async getMenusByDate(
     date: string,
     menuPeriod?: string,
@@ -90,40 +134,10 @@ class MenuService {
 
     const { dish_id, dish_category, menu_date, period_id } = input;
 
-    // Validate date format (YYYY-MM-DD)
-    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-    if (!dateRegex.test(menu_date)) {
-      throw new AppError(
-        "Invalid date format. Use YYYY-MM-DD",
-        HttpStatusCode.BAD_REQUEST,
-      );
-    }
-
-    // Validate that the dish exists
-    const dishResult = await pool.query(
-      "SELECT * FROM dishes WHERE id_dish = $1",
-      [dish_id],
-    );
-
-    if (dishResult.rows.length === 0) {
-      throw new AppError(
-        `Dish with ID ${dish_id} not found`,
-        HttpStatusCode.NOT_FOUND,
-      );
-    }
-
-    // Validate that the period exists
-    const periodResult = await pool.query(
-      "SELECT * FROM period_time WHERE id = $1",
-      [period_id],
-    );
-
-    if (periodResult.rows.length === 0) {
-      throw new AppError(
-        `Period with ID ${period_id} not found`,
-        HttpStatusCode.NOT_FOUND,
-      );
-    }
+    // Validate inputs
+    this.validateDateFormat(menu_date);
+    await this.validateDishExists(dish_id);
+    await this.validatePeriodExists(period_id);
 
     try {
       const result = await pool.query(
@@ -136,7 +150,7 @@ class MenuService {
       logger.info({ id: result.rows[0].id_menu }, "Menu created successfully");
       return result.rows[0];
     } catch (error: any) {
-      if (error.code === "23505") {
+      if (error.code === PostgresErrorCode.UNIQUE_VIOLATION) {
         throw new AppError(
           `A menu for ${dish_category} already exists for this period on ${menu_date}`,
           HttpStatusCode.CONFLICT,
@@ -149,40 +163,27 @@ class MenuService {
   async updateMenu(id: number, input: UpdateMenuInput): Promise<Menu> {
     logger.info({ id, input }, "Updating menu");
 
+    // Validate inputs if provided
+    if (input.dish_id !== undefined) {
+      await this.validateDishExists(input.dish_id);
+    }
+    if (input.period_id !== undefined) {
+      await this.validatePeriodExists(input.period_id);
+    }
+    if (input.menu_date !== undefined) {
+      this.validateDateFormat(input.menu_date);
+    }
+
     const fields: string[] = [];
     const values: any[] = [];
     let paramCount = 1;
 
     if (input.dish_id !== undefined) {
-      const dishResult = await pool.query(
-        "SELECT * FROM dishes WHERE id_dish = $1",
-        [input.dish_id],
-      );
-
-      if (dishResult.rows.length === 0) {
-        throw new AppError(
-          `Dish with ID ${input.dish_id} not found`,
-          HttpStatusCode.NOT_FOUND,
-        );
-      }
-
       fields.push(`dish_id = $${paramCount++}`);
       values.push(input.dish_id);
     }
 
     if (input.period_id !== undefined) {
-      const periodResult = await pool.query(
-        "SELECT * FROM period_time WHERE id = $1",
-        [input.period_id],
-      );
-
-      if (periodResult.rows.length === 0) {
-        throw new AppError(
-          `Period with ID ${input.period_id} not found`,
-          HttpStatusCode.NOT_FOUND,
-        );
-      }
-
       fields.push(`period_id = $${paramCount++}`);
       values.push(input.period_id);
     }
@@ -218,7 +219,7 @@ class MenuService {
       logger.info({ id }, "Menu updated successfully");
       return result.rows[0];
     } catch (error: any) {
-      if (error.code === "23505") {
+      if (error.code === PostgresErrorCode.UNIQUE_VIOLATION) {
         throw new AppError(
           "A menu with this combination already exists",
           HttpStatusCode.CONFLICT,
